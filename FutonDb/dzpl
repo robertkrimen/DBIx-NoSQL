@@ -1,0 +1,19 @@
+use Dzpl
+    name => 'FutonDb',
+    version => '0.0010',
+    author => 'Robert Krimen <robertkrimen@gmail.com>',
+    license => 'Perl5',
+    copyright => 'Robert Krimen',
+
+    require => q/
+        SQL::Abstract
+        DBI
+        DBD::SQLite
+
+        [Test]
+        Test::Most
+    /,
+;
+
+{ plugin '@ROKR' }
+
