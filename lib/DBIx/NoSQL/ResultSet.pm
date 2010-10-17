@@ -32,9 +32,18 @@ sub select {
         $self->source->table, \@fieldlist, $self->_where, $self->_order_by );
 }
 
+sub key {
+    my $self = shift;
+    return $self->select( $self->source->key_column );
+}
+
 sub value {
     my $self = shift;
     return $self->select( $self->source->value_column );
+}
+
+sub get {
+    my $self = shift;
 }
 
 

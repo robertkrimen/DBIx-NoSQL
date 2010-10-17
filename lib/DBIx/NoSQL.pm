@@ -34,25 +34,44 @@ sub search {
     return DBIx::NoSQL::ResultSet->new( source => $self->source( $moniker ) );
 }
 
+sub put {
+    my $self = shift;
+    my $source_name = shift;
+
+    die "Missing source" unless $source_name;
+    my $source = $self->source( $source_name ) or die "Invalid source ($source_name)";
+    return $source->put( @_ );
+}
+
 sub set {
     my $self = shift;
-    my $target = shift or die "Missing target";
-    my $data = shift;
+    my $source_name = shift;
 
-    my ( $source, $search );
-    if ( ! ref $target ) {
-        $source = $self->source( $target );
-    }
-    elsif ( ref $target eq 'ARRAY' ) {
-        $source = $self->source( $target->[0] );
-        $search = $source->find( $target->[1] );
-    }
-    elsif ( blessed $target && $target->isa( 'DBIx::NoSQL::ResultSet' ) ) {
-        $source = $target->source;
-    }
-
-    $source->set( $search, $data );
+    die "Missing source" unless $source_name;
+    my $source = $self->source( $source_name ) or die "Invalid source ($source_name)";
+    return $source->set( @_ );
 }
+
+
+#sub set {
+#    my $self = shift;
+#    my $target = shift or die "Missing target";
+#    my $data = shift;
+
+#    my ( $source, $_target );
+#    if ( ! ref $target ) {
+#        $source = $self->source( $target );
+#    }
+#    elsif ( ref $target eq 'ARRAY' ) {
+#        $source = $self->source( $target->[0] );
+#        $_target = $target->[1];
+#    }
+#    elsif ( blessed $target && $target->isa( 'DBIx::NoSQL::ResultSet' ) ) {
+#        $source = $target->source;
+#    }
+
+#    return $source->set( $_target, $data );
+#}
 
 sub transact {
     my $self = shift;
