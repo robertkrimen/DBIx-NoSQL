@@ -1,16 +1,25 @@
-package DBIx::NoSQL::ResultSource;
+package DBIx::NoSQL::EntitySource;
 
 use Modern::Perl;
 
 use Any::Moose;
 
-use DBIx::NoSQL::Entity;
-use DBIx::NoSQL::SubDispatch;
-use Hash::Merge::Simple;
+has store => qw/ is ro required 1 weak_ref 1 /;
+has moniker => qw/ is ro required 1 /;
+
+sub set {
+    my $self = shift;
+    my $data = shift;
+
+    my $json = $self->store->json->encode( $data );
+}
+
+1;
+
+__END__
 
 has store => qw/ is ro required 1 weak_ref 1 /;
 
-has moniker => qw/ is ro required 1 /;
 has table => qw/ is rw lazy_build 1 /;
 sub _build_table { return $_[0]->moniker }
 

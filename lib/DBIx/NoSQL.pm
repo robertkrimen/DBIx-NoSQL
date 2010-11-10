@@ -12,8 +12,7 @@ eval { require JSON::XS; };
 our $json = JSON->new->pretty;
 sub json { $json }
 
-use DBIx::NoSQL::ResultSource;
-use DBIx::NoSQL::ResultSet;
+use DBIx::NoSQL::EntitySource;
 
 has dbh => qw/ is rw /;
 has _source => qw/ is ro lazy_build 1 /;
@@ -23,9 +22,28 @@ sub source {
     my $self = shift;
     my $moniker = shift or die "Missing moniker";
 
-    return $self->_source->{$moniker} ||= DBIx::NoSQL::ResultSource->new(
+    return $self->_source->{$moniker} ||= DBIx::NoSQL::EntitySource->new(
         store => $self, moniker => $moniker );
 }
+
+sub transact {
+    my $self = shift;
+    my $code = shift;
+
+    my $dbh = $self->dbh;
+    try {
+        $dbh->begin_work;
+        $code->();
+        $dbh->commit;
+    }
+    catch {
+        try { $dbh->rollback }
+    }
+}
+
+1;
+
+__END__
 
 sub search {
     my $self = shift;
@@ -72,20 +90,5 @@ sub set {
 
 #    return $source->set( $_target, $data );
 #}
-
-sub transact {
-    my $self = shift;
-    my $code = shift;
-
-    my $dbh = $self->dbh;
-    try {
-        $dbh->begin_work;
-        $code->();
-        $dbh->commit;
-    }
-    catch {
-        try { $dbh->rollback }
-    }
-}
 
 1;
