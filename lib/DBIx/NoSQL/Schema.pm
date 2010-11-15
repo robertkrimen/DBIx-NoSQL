@@ -7,6 +7,8 @@ use Any::Moose;
 use JSON; our $json = JSON->new->pretty;
 use Digest::SHA qw/ sha1_hex /;
 
+use DBIx::Class::ResultClass::HashRefInflator;
+
 extends qw/ DBIx::Class::Schema /;
 our $schema = __PACKAGE__;
 our $register = sub {
@@ -17,6 +19,10 @@ __PACKAGE__->load_namespaces;
 
 has sql => qw/ is ro lazy_build 1 /;
 sub _build_sql {
+    return shift->generate_sql;
+}
+
+sub generate_sql {
     my $self = shift;
     my $sql = $self->deployment_statements( undef, undef, undef, { add_drop_table => 1 } );
     $sql =~ s/^--[^\n]*$//gsm;
@@ -42,6 +48,32 @@ sub deploy {
     #);
 }
 
+package DBIx::NoSQL::Schema::Result::__Entity__;
+
+use strict;
+use warnings;
+
+use base qw/ DBIx::Class::Core /;
+
+__PACKAGE__->table( '__Entity__' );
+__PACKAGE__->add_columns(
+    __moniker__ => {
+        data_type => 'text',
+    },
+    __key__ => {
+        data_type => 'text',
+    },
+    __value__ => {
+        data_type => 'text',
+        default_value => '{}',
+    },
+);
+__PACKAGE__->set_primary_key(qw/ __moniker__ __key__ /);
+$register->();
+
+1;
+
+__END__
 package DBIx::NoSQL::Schema::Result::Entity;
 
 use strict;

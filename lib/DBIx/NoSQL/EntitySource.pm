@@ -5,13 +5,50 @@ use Modern::Perl;
 use Any::Moose;
 
 has store => qw/ is ro required 1 weak_ref 1 /;
-has moniker => qw/ is ro required 1 /;
+has moniker => qw/ reader moniker writer _moniker required 1 /;
+has search_source => qw/ is ro lazy_build 1 /;
+sub _build_search_source {
+    my $self = shift;
+    return $self->store->schema->result_source( $self->moniker );
+}
+has entity_search_source => qw/ is ro lazy_build 1 /, handles => [qw/
+    register_search_class
+/];
+sub _build_entity_search_source {
+    my $self = shift;
+    require DBIx::NoSQL::EntitySearchSource;
+    return DBIx::NoSQL::EntitySearchSource->new( entity_source => $self );
+}
 
 sub set {
     my $self = shift;
+    my $key = shift;
     my $data = shift;
 
-    my $json = $self->store->json->encode( $data );
+    my $value = $self->store->json->encode( $data );
+
+    $self->store->schema->resultset( '__Entity__' )->update_or_create(
+        { __moniker__ => $self->moniker, __key__ => $key, __value__ => $value },
+        { key => 'primary' },
+    );
+
+    $self->store->schema->resultset( $self->moniker )->update_or_create(
+        { $self->entity_search_source->key_column => $key },
+        { key => 'primary' },
+    );
+}
+
+sub search {
+    my $self = shift;
+
+    require DBIx::NoSQL::Search;
+    my $search = DBIx::NoSQL::Search->new( entity_source => $self );
+
+    if ( @_ ) {
+        $search->_where( $_[0] );
+    }
+
+    return $search;
 }
 
 1;

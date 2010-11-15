@@ -6,6 +6,7 @@ use warnings;
 
 use Any::Moose;
 use Try::Tiny;
+use Path::Class;
 
 use JSON;
 eval { require JSON::XS; };
@@ -14,7 +15,12 @@ sub json { $json }
 
 use DBIx::NoSQL::EntitySource;
 
-has dbh => qw/ is rw /;
+has dbh => qw/ is ro lazy_build 1 /;
+sub _build_dbh {
+    my $self = shift;
+    return $self->schema->storage->dbh;
+}
+
 has _source => qw/ is ro lazy_build 1 /;
 sub _build__source { {} }
 
@@ -22,10 +28,42 @@ sub source {
     my $self = shift;
     my $moniker = shift or die "Missing moniker";
 
-    return $self->_source->{$moniker} ||= DBIx::NoSQL::EntitySource->new(
+    return $self->_source->{ $moniker } ||= DBIx::NoSQL::EntitySource->new(
         store => $self, moniker => $moniker );
 }
 
+sub search {
+    my $self = shift;
+    my $moniker = shift or die "Missing moniker";
+
+    my $source = $self->_source->{ $moniker } or die "No such moniker ($moniker)";
+    return $source->search( @_ );
+}
+
+has schema_file => qw/ is ro required 1 /;
+
+has schema => qw/ reader _schema lazy_build 1 predicate _has_schema /;
+sub _build_schema {
+    my $self = shift;
+    my $file = $self->schema_file;
+    require DBIx::NoSQL::Schema;
+    my $schema = DBIx::NoSQL::Schema->connect( "dbi:SQLite:dbname=$file" );
+    #$schema->store( $self );
+    return $schema;
+}
+
+sub schema {
+    my $self = shift;
+    return $self->_schema if $self->_has_schema;
+    my $file = file $self->schema_file;
+    my $exists = -s $file;
+    my $schema = $self->_schema;
+    unless ( $exists ) {
+        $file->parent->mkpath;
+        $schema->deploy;
+    }
+    return $schema;
+}
 sub transact {
     my $self = shift;
     my $code = shift;
