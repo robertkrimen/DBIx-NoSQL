@@ -49,7 +49,7 @@ sub prepare {
     my $maker = DBIx::Class::SQLMaker->new;
 
     my $entity_table = '__Entity__';
-    my $moniker = $self->entity_source->moniker;
+    my $moniker = $self->entity_source->type;
     my $search_table = $moniker;
     my $search_key_column = 'key';
 

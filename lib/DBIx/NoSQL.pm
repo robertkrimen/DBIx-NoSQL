@@ -24,28 +24,27 @@ sub _build_dbh {
 has _source => qw/ is ro lazy_build 1 /;
 sub _build__source { {} }
 
-sub source {
+sub type {
     my $self = shift;
-    my $moniker = shift or die "Missing moniker";
+    my $type_name = shift or die "Missing type";
 
-    return $self->_source->{ $moniker } ||= DBIx::NoSQL::EntitySource->new(
-        store => $self, moniker => $moniker );
+    return $self->_source->{ $type_name } ||= DBIx::NoSQL::EntitySource->new( store => $self, type => $type_name );
 }
 
 sub prepare {
     my $self = shift;
     for my $name ( @_ ) {
-        my $type = $self->source( $name );
+        my $type = $self->type( $name );
         $type->prepare;
     }
 }
 
 sub search {
     my $self = shift;
-    my $moniker = shift or die "Missing moniker";
+    my $type_name = shift or die "Missing type";
 
-    my $source = $self->_source->{ $moniker } or die "No such moniker ($moniker)";
-    return $source->search( @_ );
+    my $type = $self->_source->{ $type_name } or die "No such type ($type_name)";
+    return $type->search( @_ );
 }
 
 has database => qw/ is ro required 1 /;

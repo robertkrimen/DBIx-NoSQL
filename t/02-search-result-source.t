@@ -18,16 +18,11 @@ $store = DBIx::NoSQL->new( database => $store_file );
 
 ok( $store );
 
-#$store->source( 'Artist' )->register_search_class( 't::Test::Artist' );
-#$store->source( 'Artist' )->register_search_class;
-#$store->source( 'Artist' )->entity_search_source->deploy;
 $store->prepare(qw/ Artist /);
 
-$store->source( 'Artist' )->set( 1 => { Xyzzy => 1 } );
-$store->source( 'Artist' )->set( 2 => { Xyzzy => 2 } );
-$store->source( 'Artist' )->set( 3 => { Xyzzy => 3 } );
-
-$store->schema->resultset( 'Artist' )->search({ key => 1 });
+$store->type( 'Artist' )->set( 1 => { Xyzzy => 1 } );
+$store->type( 'Artist' )->set( 2 => { Xyzzy => 2 } );
+$store->type( 'Artist' )->set( 3 => { Xyzzy => 3 } );
 
 is( $store->search( 'Artist', { key => 1 } )->count, 1 );
 is( $store->search( 'Artist' )->count, 3 );
