@@ -24,27 +24,27 @@ sub _build_dbh {
 has _model => qw/ is ro lazy_build 1 /;
 sub _build__model { {} }
 
-sub type {
+sub model {
     my $self = shift;
-    my $type_name = shift or die "Missing type";
+    my $name = shift or die "Missing model name";
 
-    return $self->_model->{ $type_name } ||= DBIx::NoSQL::EntityModel->new( store => $self, type => $type_name );
+    return $self->_model->{ $name } ||= DBIx::NoSQL::EntityModel->new( store => $self, name => $name );
 }
 
 sub prepare {
     my $self = shift;
     for my $name ( @_ ) {
-        my $type = $self->type( $name );
-        $type->prepare;
+        my $model = $self->model( $name );
+        $model->prepare;
     }
 }
 
 sub search {
     my $self = shift;
-    my $type_name = shift or die "Missing type";
+    my $name = shift or die "Missing model name";
 
-    my $type = $self->_model->{ $type_name } or die "No such type ($type_name)";
-    return $type->search( @_ );
+    my $model = $self->_model->{ $name } or die "No such model ($name)";
+    return $model->search( @_ );
 }
 
 has database => qw/ is ro required 1 /;
@@ -65,7 +65,7 @@ sub _build_schema {
     my $schema_class = $self->schema_class;
     my $store_result_class = DBIx::NoSQL::Class->new->become_ResultClass_Store;
 
-    $store_result_class->package->register( $schema_class->package, '__Entity__' );
+    $store_result_class->package->register( $schema_class->package, $store_result_class->package->table );
     my $schema = $self->schema_class->package->connect( "dbi:SQLite:dbname=$database" );
     return $schema;
 }

@@ -17,7 +17,7 @@ sub set {
 
     my $value = $self->store->json->encode( $data );
 
-    $self->store->schema->resultset( '__Model__' )->update_or_create(
+    $self->store->schema->resultset( '__Store__' )->update_or_create(
         { __model__ => $self->name, __key__ => $key, __value__ => $value },
         { key => 'primary' },
     );

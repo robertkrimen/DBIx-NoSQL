@@ -48,12 +48,12 @@ sub prepare {
 
     my $maker = DBIx::Class::SQLMaker->new;
 
-    my $entity_table = '__Entity__';
-    my $moniker = $self->entity_model->type;
-    my $search_table = $moniker;
+    my $entity_table = '__Store__';
+    my $model_name = $self->entity_model->name;
+    my $search_table = $model_name;
     my $search_key_column = 'key';
 
-    if      ( $target eq 'value' )  { $target = '__Entity__.__value__' }
+    if      ( $target eq 'value' )  { $target = '__Store__.__value__' }
     elsif   ( $target eq 'count' )  { $target = 'COUNT(*)' }
     else                            { die "Invalid target ($target)" }
 
@@ -61,8 +61,8 @@ sub prepare {
         [
             { me => $search_table },
             [
-                { '-join-type' => 'LEFT', '__Entity__' => $entity_table },
-                { "__Entity__.__key__" => "me.$search_key_column", '__Entity__.__moniker__' => "'$moniker'" },
+                { '-join-type' => 'LEFT', '__Store__' => $entity_table },
+                { "__Store__.__key__" => "me.$search_key_column", '__Store__.__model__' => "'$model_name'" },
             ]
         ],
         $target,

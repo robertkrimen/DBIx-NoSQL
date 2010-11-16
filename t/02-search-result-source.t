@@ -20,9 +20,9 @@ ok( $store );
 
 $store->prepare(qw/ Artist /);
 
-$store->type( 'Artist' )->set( 1 => { Xyzzy => 1 } );
-$store->type( 'Artist' )->set( 2 => { Xyzzy => 2 } );
-$store->type( 'Artist' )->set( 3 => { Xyzzy => 3 } );
+$store->model( 'Artist' )->set( 1 => { Xyzzy => 1 } );
+$store->model( 'Artist' )->set( 2 => { Xyzzy => 2 } );
+$store->model( 'Artist' )->set( 3 => { Xyzzy => 3 } );
 
 is( $store->search( 'Artist', { key => 1 } )->count, 1 );
 is( $store->search( 'Artist' )->count, 3 );

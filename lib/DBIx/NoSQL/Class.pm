@@ -52,9 +52,9 @@ sub become_ResultClass_Store {
     $self->become_ResultClass;
     my $package = $self->package;
 
-    $package->table( '__Entity__' );
+    $package->table( '__Store__' );
     $package->add_columns(
-        __moniker__ => {
+        __model__ => {
             data_type => 'text',
         },
         __key__ => {
@@ -65,7 +65,7 @@ sub become_ResultClass_Store {
             default_value => '{}',
         },
     );
-    $package->set_primary_key(qw/ __moniker__ __key__ /);
+    $package->set_primary_key(qw/ __model__ __key__ /);
     return $self;
 }
 
