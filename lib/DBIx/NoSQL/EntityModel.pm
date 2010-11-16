@@ -1,11 +1,11 @@
-package DBIx::NoSQL::EntitySource;
+package DBIx::NoSQL::EntityModel;
 
 use Modern::Perl;
 
 use Any::Moose;
 
 has store => qw/ is ro required 1 weak_ref 1 /;
-has type => qw/ reader type writer _type required 1 /;
+has name => qw/ reader name writer _name required 1 /;
 
 has inflate => qw/ accessor _inflate isa Maybe[CodeRef] /;
 has deflate => qw/ accessor _deflate isa Maybe[CodeRef] /;
@@ -17,12 +17,12 @@ sub set {
 
     my $value = $self->store->json->encode( $data );
 
-    $self->store->schema->resultset( '__Entity__' )->update_or_create(
-        { __moniker__ => $self->type, __key__ => $key, __value__ => $value },
+    $self->store->schema->resultset( '__Model__' )->update_or_create(
+        { __model__ => $self->name, __key__ => $key, __value__ => $value },
         { key => 'primary' },
     );
 
-    $self->store->schema->resultset( $self->type )->update_or_create(
+    $self->store->schema->resultset( $self->name )->update_or_create(
         { $self->key_column => $key },
         { key => 'primary' },
     );
@@ -59,7 +59,7 @@ sub search {
     my $self = shift;
 
     require DBIx::NoSQL::Search;
-    my $search = DBIx::NoSQL::Search->new( entity_source => $self );
+    my $search = DBIx::NoSQL::Search->new( entity_model => $self );
 
     if ( @_ ) {
         $search->_where( $_[0] );
@@ -90,26 +90,28 @@ sub register_result_class {
 
     my $store = $self->store;
     my $schema = $store->schema;
-    my $type = $self->type;
+    my $name = $self->name;
     my $result_class_package = $self->result_class->package;
 
-    $schema->unregister_source( $type ) if $schema->source_registrations->{ $type };
+    $schema->unregister_source( $name ) if $schema->source_registrations->{ $name };
 
-    unless ( $result_class_package->can( 'result_source_instance' ) ) {
-        $result_class_package->table( $type );
+    {
+        unless ( $result_class_package->can( 'result_source_instance' ) ) {
+            $result_class_package->table( $name );
+        }
+
+        my $key_column = $self->key_column;
+        unless( $result_class_package->has_column( $key_column ) ) {
+            $result_class_package->add_column( $key_column => {
+                data_type => 'text'
+            } );
+        }
+        unless( $result_class_package->primary_columns ) {
+            $result_class_package->set_primary_key( $key_column );
+        }
     }
 
-    my $key_column = $self->key_column;
-    unless( $result_class_package->has_column( $key_column ) ) {
-        $result_class_package->add_column( $key_column => {
-            data_type => 'text'
-        } );
-    }
-    unless( $result_class_package->primary_columns ) {
-        $result_class_package->set_primary_key( $key_column );
-    }
-
-    $schema->register_class( $type => $result_class_package );
+    $schema->register_class( $name => $result_class_package );
 
     my $table = $result_class_package->table;
     my $sql = $schema->build_sql;
@@ -125,10 +127,10 @@ sub deploy {
     my $self = shift;
 
     my $store = $self->store;
-    my $type = $self->type;
+    my $name = $self->name;
 
     my ( $count ) = $store->dbh->selectrow_array(
-        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", undef, $type );
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", undef, $name );
     if ( ! $count ) {
         $store->dbh->do( $self->create_statement );
     }

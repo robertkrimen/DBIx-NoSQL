@@ -5,7 +5,7 @@ use Modern::Perl;
 use Any::Moose;
 use Hash::Merge::Simple qw/ merge /;
 
-has entity_source => qw/ is ro required 1 /;
+has entity_model => qw/ is ro required 1 /;
 
 has [qw/ _where _order_by /] => qw/ is rw isa Maybe[HashRef] /;
 has [qw/ _limit _offset /] => qw/ is rw /;
@@ -26,7 +26,7 @@ sub clone {
     my @override = @_;
 
     return ( ref $self )->new(
-        entity_source => $self->entity_source,
+        entity_model => $self->entity_model,
         _where => $self->_where,
         _order_by => $self->_order_by,
         _limit => $self->_limit,
@@ -49,7 +49,7 @@ sub prepare {
     my $maker = DBIx::Class::SQLMaker->new;
 
     my $entity_table = '__Entity__';
-    my $moniker = $self->entity_source->type;
+    my $moniker = $self->entity_model->type;
     my $search_table = $moniker;
     my $search_key_column = 'key';
 
@@ -76,15 +76,15 @@ sub fetch {
     my $self = shift;
 
     my ( $statement, @bind ) = $self->prepare( 'value' );
-    my $result = $self->entity_source->store->dbh->selectall_arrayref( $statement, undef, @bind );
-    return map { $self->entity_source->inflate( $_->[0] ) } @$result;
+    my $result = $self->entity_model->store->dbh->selectall_arrayref( $statement, undef, @bind );
+    return map { $self->entity_model->inflate( $_->[0] ) } @$result;
 }
 
 sub count {
     my $self = shift;
 
     my ( $statement, @bind ) = $self->prepare( 'count' );
-    my $result = $self->entity_source->store->dbh->selectrow_arrayref( $statement, undef, @bind );
+    my $result = $self->entity_model->store->dbh->selectrow_arrayref( $statement, undef, @bind );
     return $result->[0];
 }
 

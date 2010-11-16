@@ -13,7 +13,7 @@ eval { require JSON::XS; };
 our $json = JSON->new->pretty;
 sub json { $json }
 
-use DBIx::NoSQL::EntitySource;
+use DBIx::NoSQL::Entitymodel;
 
 has dbh => qw/ is ro lazy_build 1 /;
 sub _build_dbh {
@@ -21,14 +21,14 @@ sub _build_dbh {
     return $self->schema->storage->dbh;
 }
 
-has _source => qw/ is ro lazy_build 1 /;
-sub _build__source { {} }
+has _model => qw/ is ro lazy_build 1 /;
+sub _build__model { {} }
 
 sub type {
     my $self = shift;
     my $type_name = shift or die "Missing type";
 
-    return $self->_source->{ $type_name } ||= DBIx::NoSQL::EntitySource->new( store => $self, type => $type_name );
+    return $self->_model->{ $type_name } ||= DBIx::NoSQL::EntityModel->new( store => $self, type => $type_name );
 }
 
 sub prepare {
@@ -43,7 +43,7 @@ sub search {
     my $self = shift;
     my $type_name = shift or die "Missing type";
 
-    my $type = $self->_source->{ $type_name } or die "No such type ($type_name)";
+    my $type = $self->_model->{ $type_name } or die "No such type ($type_name)";
     return $type->search( @_ );
 }
 
