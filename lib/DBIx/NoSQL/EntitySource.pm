@@ -20,6 +20,9 @@ sub _build_entity_search_source {
     return DBIx::NoSQL::EntitySearchSource->new( entity_source => $self );
 }
 
+has inflate => qw/ accessor _inflate isa Maybe[CodeRef] /;
+has deflate => qw/ accessor _deflate isa Maybe[CodeRef] /;
+
 sub set {
     my $self = shift;
     my $key = shift;
@@ -36,6 +39,33 @@ sub set {
         { $self->entity_search_source->key_column => $key },
         { key => 'primary' },
     );
+}
+
+sub inflate {
+    my $self = shift;
+    my $value = shift;
+
+    my $data = $self->store->json->decode( $value ) unless ref $value;
+
+    if ( my $inflate = $self->_inflate ) {
+        $data = $inflate->( $data, $self );
+    }
+
+    return $data;
+}
+
+sub deflate {
+    my $self = shift;
+    my $data = shift;
+
+    if ( my $deflate = $self->_deflate ) {
+        $data = $deflate->( $data, $self );
+    }
+
+    my $value = $data;
+    $value = $self->store->json->encode( $value ) if ref $value;
+
+    return $value;
 }
 
 sub search {

@@ -10,11 +10,11 @@ use Path::Class;
 
 ok( 1 );
 
-my ( $store, $schema_file );
-$schema_file = File::Temp->new->filename;
-$schema_file = file 'test.sqlite';
-$schema_file->remove;
-$store = DBIx::NoSQL->new( schema_file => $schema_file );
+my ( $store, $store_file );
+$store_file = File::Temp->new->filename;
+$store_file = file 'test.sqlite';
+$store_file->remove;
+$store = DBIx::NoSQL->new( database => $store_file );
 
 ok( $store );
 
@@ -30,5 +30,9 @@ $store->schema->resultset( 'Artist' )->search({ key => 1 });
 is( $store->search( 'Artist', { key => 1 } )->count, 1 );
 is( $store->search( 'Artist' )->count, 3 );
 is( $store->search( 'Artist', { key => { -in => [qw/ 1 3 /] } } )->count, 2 );
+cmp_deeply( [ $store->search( 'Artist', { key => 1 } )->fetch ], [
+    { Xyzzy => 1 },
+] );
+#cmp_deeply( [ $store->search( 'Artist', { key => { -in => [qw/ 1 3 /] } } )->order_by(
 
 done_testing;

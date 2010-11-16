@@ -8,9 +8,9 @@ use DBIx::NoSQL;
 
 ok( 1 );
 
-my ( $store, $schema_file );
-$schema_file = File::Temp->new->filename;
-$store = DBIx::NoSQL->new( schema_file => $schema_file );
+my ( $store, $store_file );
+$store_file = File::Temp->new->filename;
+$store = DBIx::NoSQL->new( database => $store_file );
 
 ok( $store );
 

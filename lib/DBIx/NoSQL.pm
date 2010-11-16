@@ -40,30 +40,42 @@ sub search {
     return $source->search( @_ );
 }
 
-has schema_file => qw/ is ro required 1 /;
+has database => qw/ is ro required 1 /;
+
+require DBIx::NoSQL::Class;
+
+has schema_class => qw/ is ro lazy_build 1 /;
+sub _build_schema_class {
+    my $self = shift;
+    return DBIx::NoSQL::Class->new->become_Schema;
+}
 
 has schema => qw/ reader _schema lazy_build 1 predicate _has_schema /;
 sub _build_schema {
     my $self = shift;
-    my $file = $self->schema_file;
-    require DBIx::NoSQL::Schema;
-    my $schema = DBIx::NoSQL::Schema->connect( "dbi:SQLite:dbname=$file" );
-    #$schema->store( $self );
+
+    my $database = $self->database;
+    my $schema_class = $self->schema_class;
+    my $store_result_class = DBIx::NoSQL::Class->new->become_ResultClass_Store;
+
+    $store_result_class->package->register( $schema_class->package, '__Entity__' );
+    my $schema = $self->schema_class->package->connect( "dbi:SQLite:dbname=$database" );
     return $schema;
 }
 
 sub schema {
     my $self = shift;
     return $self->_schema if $self->_has_schema;
-    my $file = file $self->schema_file;
-    my $exists = -s $file;
+    my $database = file $self->database;
+    my $exists = -s $database;
     my $schema = $self->_schema;
     unless ( $exists ) {
-        $file->parent->mkpath;
+        $database->parent->mkpath;
         $schema->deploy;
     }
     return $schema;
 }
+
 sub transact {
     my $self = shift;
     my $code = shift;
@@ -75,58 +87,10 @@ sub transact {
         $dbh->commit;
     }
     catch {
-        try { $dbh->rollback }
+        try {
+            $dbh->rollback;
+        }
     }
 }
-
-1;
-
-__END__
-
-sub search {
-    my $self = shift;
-    my $moniker = shift or die "Missing moniker";
-
-    return DBIx::NoSQL::ResultSet->new( source => $self->source( $moniker ) );
-}
-
-sub put {
-    my $self = shift;
-    my $source_name = shift;
-
-    die "Missing source" unless $source_name;
-    my $source = $self->source( $source_name ) or die "Invalid source ($source_name)";
-    return $source->put( @_ );
-}
-
-sub set {
-    my $self = shift;
-    my $source_name = shift;
-
-    die "Missing source" unless $source_name;
-    my $source = $self->source( $source_name ) or die "Invalid source ($source_name)";
-    return $source->set( @_ );
-}
-
-
-#sub set {
-#    my $self = shift;
-#    my $target = shift or die "Missing target";
-#    my $data = shift;
-
-#    my ( $source, $_target );
-#    if ( ! ref $target ) {
-#        $source = $self->source( $target );
-#    }
-#    elsif ( ref $target eq 'ARRAY' ) {
-#        $source = $self->source( $target->[0] );
-#        $_target = $target->[1];
-#    }
-#    elsif ( blessed $target && $target->isa( 'DBIx::NoSQL::ResultSet' ) ) {
-#        $source = $target->source;
-#    }
-
-#    return $source->set( $_target, $data );
-#}
 
 1;

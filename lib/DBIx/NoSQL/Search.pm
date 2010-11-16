@@ -77,7 +77,7 @@ sub fetch {
 
     my ( $statement, @bind ) = $self->prepare( 'value' );
     my $result = $self->entity_source->store->dbh->selectall_arrayref( $statement, undef, @bind );
-    return @$result;
+    return map { $self->entity_source->inflate( $_->[0] ) } @$result;
 }
 
 sub count {
