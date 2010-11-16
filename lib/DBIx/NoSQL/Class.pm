@@ -80,10 +80,10 @@ use Digest::SHA qw/ sha1_hex /;
 
 has sql => qw/ is ro lazy_build 1 /;
 sub _build_sql {
-    return shift->generate_sql;
+    return shift->build_sql;
 }
 
-sub generate_sql {
+sub build_sql {
     my $self = shift;
     my $sql = $self->deployment_statements( undef, undef, undef, { add_drop_table => 1 } );
     $sql =~ s/^--[^\n]*$//gsm;
@@ -98,11 +98,13 @@ sub _build_version {
 
 sub deploy {
     my $self = shift;
+
     my $sql = $self->sql;
     my @sql = split m/;\n/, $sql;
-    warn join "\n", @sql, '';
+    print STDERR join "\n", @sql, '';
     my $dbh = $self->storage->dbh;
     $dbh->do( $_ ) for @sql;
+
     #$self->jourpl->database->query(
         #'INSERT INTO __meta__ (version) VALUES (?)',
         #$self->version,

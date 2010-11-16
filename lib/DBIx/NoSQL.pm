@@ -32,6 +32,14 @@ sub source {
         store => $self, moniker => $moniker );
 }
 
+sub prepare {
+    my $self = shift;
+    for my $name ( @_ ) {
+        my $type = $self->source( $name );
+        $type->prepare;
+    }
+}
+
 sub search {
     my $self = shift;
     my $moniker = shift or die "Missing moniker";
