@@ -10,7 +10,7 @@ use Path::Class;
 
 ok( 1 );
 
-my ( $store, $store_file );
+my ( $store, $store_file, $model );
 $store_file = File::Temp->new->filename;
 $store_file = file 'test.sqlite';
 $store_file->remove;
@@ -19,6 +19,9 @@ $store = DBIx::NoSQL->new( database => $store_file );
 ok( $store );
 
 $store->prepare(qw/ Artist /);
+$model = $store->model( 'Album' );
+$model->field( name => ( index => 1 ) );
+$model->prepare;
 
 $store->model( 'Artist' )->set( 1 => { Xyzzy => 1 } );
 $store->model( 'Artist' )->set( 2 => { Xyzzy => 2 } );
@@ -31,5 +34,15 @@ cmp_deeply( [ $store->search( 'Artist', { key => 1 } )->fetch ], [
     { Xyzzy => 1 },
 ] );
 #cmp_deeply( [ $store->search( 'Artist', { key => { -in => [qw/ 1 3 /] } } )->order_by(
+
+cmp_deeply( $store->model( 'Artist' )->get( 1 ), { Xyzzy => 1 } );
+
+$store->model( 'Album' )->set( 3 => { name => 'Xyzzy' } );
+$store->model( 'Album' )->set( 4 => { name => 'Xyzz_' } );
+
+cmp_deeply( [ $store->search( 'Album', { name => 'Xyzzy' } )->fetch ], [
+    { name => 'Xyzzy' },
+] );
+is( $store->search( 'Album', { name => { -like => 'Xyz%' } } )->count, 2 );
 
 done_testing;

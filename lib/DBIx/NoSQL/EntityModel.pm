@@ -9,29 +9,67 @@ has name => qw/ reader name writer _name required 1 /;
 
 has inflate => qw/ accessor _inflate isa Maybe[CodeRef] /;
 has deflate => qw/ accessor _deflate isa Maybe[CodeRef] /;
+sub inflator { return shift->_inflate( @_ ) }
+sub deflator { return shift->_deflate( @_ ) }
+
+has field_map => qw/ is ro lazy_build 1 isa HashRef /;
+sub _build_field_map { {} }
+sub field {
+    require DBIx::NoSQL::EntityModel::Field;
+    my $self = shift;
+    my $name = shift;
+
+    return $self->field_map->{ $name } unless @_;
+
+    die "Already have field ($name)" if $self->field_map->{ $name };
+    my $field = $self->field_map->{ $name } = DBIx::NoSQL::EntityModel::Field->new( name => $name );
+    $field->setup( @_ );
+    return $field;
+}
+has _field2column_map => qw/ is ro /, default => sub { {} };
 
 sub set {
     my $self = shift;
     my $key = shift;
     my $data = shift;
 
-    my $value = $self->store->json->encode( $data );
+    my $value = $self->deflate( $data );
 
     $self->store->schema->resultset( '__Store__' )->update_or_create(
         { __model__ => $self->name, __key__ => $key, __value__ => $value },
         { key => 'primary' },
     );
 
-    $self->store->schema->resultset( $self->name )->update_or_create(
-        { $self->key_column => $key },
+    {
+        my %set;
+        $set{ $self->key_column } = $key;
+        while( my ( $field, $column ) = each %{ $self->_field2column_map } ) {
+            $set{ $column } = $data->{ $field };
+        }
+
+        $self->store->schema->resultset( $self->name )->update_or_create(
+            \%set, { key => 'primary' },
+        );
+    }
+}
+
+sub get {
+    my $self = shift;
+    my $key = shift;
+
+    my $result = $self->store->schema->resultset( '__Store__' )->find(
+        { __model__ => $self->name, __key__ => $key },
         { key => 'primary' },
     );
+
+    return $self->inflate( $result->get_column( '__value__' ) );
 }
 
 sub inflate {
     my $self = shift;
     my $value = shift;
 
+    # TODO Use deserializer
     my $data = $self->store->json->decode( $value ) unless ref $value;
 
     if ( my $inflate = $self->_inflate ) {
@@ -49,6 +87,7 @@ sub deflate {
         $data = $deflate->( $data, $self );
     }
 
+    # TODO Use serializer
     my $value = $data;
     $value = $self->store->json->encode( $value ) if ref $value;
 
@@ -108,6 +147,13 @@ sub register_result_class {
         }
         unless( $result_class_package->primary_columns ) {
             $result_class_package->set_primary_key( $key_column );
+        }
+
+        for my $field ( values %{ $self->field_map } ) {
+            next unless $field->index;
+            unless( $result_class_package->has_column( $field->name ) ) {
+                $field->install_index( $self, $result_class_package );
+            }
         }
     }
 
