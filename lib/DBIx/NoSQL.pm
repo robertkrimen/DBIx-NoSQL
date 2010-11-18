@@ -24,6 +24,13 @@ sub _build_dbh {
 has _model => qw/ is ro lazy_build 1 /;
 sub _build__model { {} }
 
+has type_map => qw/ is ro lazy_build 1 /;
+sub _build_type_map { 
+    my $self = shift;
+    require DBIx::NoSQL::TypeMap;
+    return DBIx::NoSQL::TypeMap->new();
+}
+
 sub model {
     my $self = shift;
     my $name = shift or die "Missing model name";
@@ -49,13 +56,12 @@ sub search {
 
 has database => qw/ is ro required 1 /;
 
-require DBIx::NoSQL::Class;
+require DBIx::NoSQL::ClassScaffold;
 
+has schema_class_scaffold => qw/ is ro lazy_build 1 /;
+sub _build_schema_class_scaffold { return DBIx::NoSQL::ClassScaffold->new->become_Schema }
 has schema_class => qw/ is ro lazy_build 1 /;
-sub _build_schema_class {
-    my $self = shift;
-    return DBIx::NoSQL::Class->new->become_Schema;
-}
+sub _build_schema_class { return shift->schema_class_scaffold->package }
 
 has schema => qw/ reader _schema lazy_build 1 predicate _has_schema /;
 sub _build_schema {
@@ -63,10 +69,11 @@ sub _build_schema {
 
     my $database = $self->database;
     my $schema_class = $self->schema_class;
-    my $store_result_class = DBIx::NoSQL::Class->new->become_ResultClass_Store;
+    my $store_result_class_scaffold = DBIx::NoSQL::ClassScaffold->new->become_ResultClass_Store;
+    my $store_result_class = $store_result_class_scaffold->package;
 
-    $store_result_class->package->register( $schema_class->package, $store_result_class->package->table );
-    my $schema = $self->schema_class->package->connect( "dbi:SQLite:dbname=$database" );
+    $store_result_class->register( $schema_class, $store_result_class->table );
+    my $schema = $self->schema_class->connect( "dbi:SQLite:dbname=$database" );
     return $schema;
 }
 

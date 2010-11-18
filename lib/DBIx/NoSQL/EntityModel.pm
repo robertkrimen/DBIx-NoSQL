@@ -23,17 +23,20 @@ sub field {
 
     die "Already have field ($name)" if $self->field_map->{ $name };
     my $field = $self->field_map->{ $name } = DBIx::NoSQL::EntityModel::Field->new( name => $name );
-    $field->setup( @_ );
+    $field->setup( $self, @_ );
     return $field;
 }
 has _field2column_map => qw/ is ro /, default => sub { {} };
+has _field2inflate_map => qw/ is ro /, default => sub { {} };
+has _field2deflate_map => qw/ is ro /, default => sub { {} };
 
 sub set {
     my $self = shift;
     my $key = shift;
     my $data = shift;
 
-    my $value = $self->deflate( $data );
+    $data = $self->deflate( $data );
+    my $value = $self->serialize( $data );
 
     $self->store->schema->resultset( '__Store__' )->update_or_create(
         { __model__ => $self->name, __key__ => $key, __value__ => $value },
@@ -62,19 +65,21 @@ sub get {
         { key => 'primary' },
     );
 
-    return $self->inflate( $result->get_column( '__value__' ) );
+    my $value = $result->get_column( '__value__' );
+    my $data = $self->deserialize( $value );
+    return $self->inflate( $data );
 }
 
 sub inflate {
     my $self = shift;
-    my $value = shift;
+    my $data = shift;
 
-    # TODO Use deserializer
-    my $data = $self->store->json->decode( $value ) unless ref $value;
-
-    if ( my $inflate = $self->_inflate ) {
-        $data = $inflate->( $data, $self );
+    while( my ( $field, $inflator ) = each %{ $self->_field2inflate_map } ) {
+        $data->{ $field } = $inflator->( $data->{ $field } ) if defined $data->{ $field };
     }
+    #if ( my $inflate = $self->_inflate ) {
+        #$data = $inflate->( $data, $self );
+    #}
 
     return $data;
 }
@@ -83,14 +88,29 @@ sub deflate {
     my $self = shift;
     my $data = shift;
 
-    if ( my $deflate = $self->_deflate ) {
-        $data = $deflate->( $data, $self );
+    while( my ( $field, $deflator ) = each %{ $self->_field2deflate_map } ) {
+        $data->{ $field } = $deflator->( $data->{ $field } ) if defined $data->{ $field };
     }
+    #if ( my $deflate = $self->_deflate ) {
+        #$data = $deflate->( $data, $self );
+    #}
 
-    # TODO Use serializer
-    my $value = $data;
-    $value = $self->store->json->encode( $value ) if ref $value;
+    return $data;
+}
 
+sub deserialize {
+    my $self = shift;
+    my $value  = shift;
+
+    my $data = $self->store->json->decode( $value );
+    return $data;
+}
+
+sub serialize {
+    my $self = shift;
+    my $data = shift;
+
+    my $value = $self->store->json->encode( $data );
     return $value;
 }
 
@@ -118,11 +138,10 @@ sub prepare {
     $self->deploy;
 }
 
+has result_class_scaffold => qw/ is ro lazy_build 1 /;
+sub _build_result_class_scaffold { return DBIx::NoSQL::ClassScaffold->new->become_ResultClass }
 has result_class => qw/ is ro lazy_build 1 /;
-sub _build_result_class {
-    my $self = shift;
-    return DBIx::NoSQL::Class->new->become_ResultClass;
-}
+sub _build_result_class { return shift->result_class_scaffold->package }
 
 sub register_result_class {
     my $self = shift;
@@ -130,36 +149,36 @@ sub register_result_class {
     my $store = $self->store;
     my $schema = $store->schema;
     my $name = $self->name;
-    my $result_class_package = $self->result_class->package;
+    my $result_class = $self->result_class;
 
     $schema->unregister_source( $name ) if $schema->source_registrations->{ $name };
 
     {
-        unless ( $result_class_package->can( 'result_source_instance' ) ) {
-            $result_class_package->table( $name );
+        unless ( $result_class->can( 'result_source_instance' ) ) {
+            $result_class->table( $name );
         }
 
         my $key_column = $self->key_column;
-        unless( $result_class_package->has_column( $key_column ) ) {
-            $result_class_package->add_column( $key_column => {
+        unless( $result_class->has_column( $key_column ) ) {
+            $result_class->add_column( $key_column => {
                 data_type => 'text'
             } );
         }
-        unless( $result_class_package->primary_columns ) {
-            $result_class_package->set_primary_key( $key_column );
+        unless( $result_class->primary_columns ) {
+            $result_class->set_primary_key( $key_column );
         }
 
         for my $field ( values %{ $self->field_map } ) {
             next unless $field->index;
-            unless( $result_class_package->has_column( $field->name ) ) {
-                $field->install_index( $self, $result_class_package );
+            unless( $result_class->has_column( $field->name ) ) {
+                $field->install_index( $self, $result_class );
             }
         }
     }
 
-    $schema->register_class( $name => $result_class_package );
+    $schema->register_class( $name => $result_class );
 
-    my $table = $result_class_package->table;
+    my $table = $result_class->table;
     my $sql = $schema->build_sql;
     my @sql = split m/;\n/, $sql;
     my ( $create ) = grep { m/(?:(?i)CREATE\s+TABLE\s+)$table/ } @sql;

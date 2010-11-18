@@ -7,6 +7,7 @@ use t::Test;
 use File::Temp qw/ tempfile /;
 use DBIx::NoSQL;
 use Path::Class;
+use DateTime;
 
 ok( 1 );
 
@@ -21,6 +22,7 @@ ok( $store );
 $store->prepare(qw/ Artist /);
 $model = $store->model( 'Album' );
 $model->field( name => ( index => 1 ) );
+$model->field( date => ( index => 1, isa => 'DateTime' ) );
 $model->prepare;
 
 $store->model( 'Artist' )->set( 1 => { Xyzzy => 1 } );
@@ -37,11 +39,11 @@ cmp_deeply( [ $store->search( 'Artist', { key => 1 } )->fetch ], [
 
 cmp_deeply( $store->model( 'Artist' )->get( 1 ), { Xyzzy => 1 } );
 
-$store->model( 'Album' )->set( 3 => { name => 'Xyzzy' } );
+$store->model( 'Album' )->set( 3 => { name => 'Xyzzy', date => DateTime->now } );
 $store->model( 'Album' )->set( 4 => { name => 'Xyzz_' } );
 
 cmp_deeply( [ $store->search( 'Album', { name => 'Xyzzy' } )->fetch ], [
-    { name => 'Xyzzy' },
+    { name => 'Xyzzy', date => re(qr/^\d+$/), },
 ] );
 is( $store->search( 'Album', { name => { -like => 'Xyz%' } } )->count, 2 );
 
