@@ -7,7 +7,8 @@ use Hash::Merge::Simple qw/ merge /;
 
 has entity_model => qw/ is ro required 1 /;
 
-has [qw/ _where _order_by /] => qw/ is rw isa Maybe[HashRef] /;
+has [qw/ _where /] => qw/ is rw isa Maybe[HashRef] /;
+has [qw/ _order_by /] => qw/ is rw isa Maybe[ArrayRef] /;
 has [qw/ _limit _offset /] => qw/ is rw /;
 
 sub where {
@@ -21,6 +22,20 @@ sub where {
     return $self->clone( _where => $where ); 
 }
 
+sub order_by {
+    my $self = shift;
+    my $order_by = shift;
+
+    $order_by = [ $order_by ] unless ref $order_by;
+
+    if ( my $_order_by = $self->_order_by ) {
+        $order_by = [ @$_order_by, @$order_by ];
+    }
+
+    return $self->clone( _order_by => $order_by ); 
+}
+
+
 sub clone {
     my $self = shift;
     my @override = @_;
@@ -31,6 +46,7 @@ sub clone {
         _order_by => $self->_order_by,
         _limit => $self->_limit,
         _offset => $self->_offset,
+        @override
     );
 }
 
@@ -39,12 +55,19 @@ sub prepare {
     my $self = shift;
     my $target = shift;
 
-    my @where_order_limit_offset =
+    $target = 'value' unless defined $target;
+
+    my %options;
+    if ( my $order_by = $self->_order_by ) {
+        $options{ order_by } = $order_by;
+    }
+
+    my @where_order_limit_offset = (
         $self->_where,
-        $self->_order_by,
+        \%options,
         $self->_limit,
         $self->_offset,
-    ;
+    );
 
     my $maker = DBIx::Class::SQLMaker->new;
 
@@ -72,12 +95,21 @@ sub prepare {
     return ( $statement, @bind );
 }
 
+sub get {
+    my $self = shift;
+    my ( $statement, @bind ) = $self->prepare( 'value' );
+    my $entity_model = $self->entity_model;
+    my $result = $entity_model->store->dbh->selectall_arrayref( $statement, undef, @bind );
+    return map { $entity_model->process_get( $_->[0] ) } @$result;
+}
+
 sub fetch {
     my $self = shift;
 
     my ( $statement, @bind ) = $self->prepare( 'value' );
-    my $result = $self->entity_model->store->dbh->selectall_arrayref( $statement, undef, @bind );
-    return map { $self->entity_model->deserialize( $_->[0] ) } @$result;
+    my $entity_model = $self->entity_model;
+    my $result = $entity_model->store->dbh->selectall_arrayref( $statement, undef, @bind );
+    return map { $entity_model->deserialize( $_->[0] ) } @$result;
 }
 
 sub count {

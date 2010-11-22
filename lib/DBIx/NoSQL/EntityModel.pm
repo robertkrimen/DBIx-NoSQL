@@ -3,6 +3,7 @@ package DBIx::NoSQL::EntityModel;
 use Modern::Perl;
 
 use Any::Moose;
+use Clone qw/ clone /;
 
 has store => qw/ is ro required 1 weak_ref 1 /;
 has name => qw/ reader name writer _name required 1 /;
@@ -11,6 +12,9 @@ has inflate => qw/ accessor _inflate isa Maybe[CodeRef] /;
 has deflate => qw/ accessor _deflate isa Maybe[CodeRef] /;
 sub inflator { return shift->_inflate( @_ ) }
 sub deflator { return shift->_deflate( @_ ) }
+
+has wrap => qw/ accessor _wrap /;
+sub wrapper { return shift->_wrap( @_ ) }
 
 has field_map => qw/ is ro lazy_build 1 isa HashRef /;
 sub _build_field_map { {} }
@@ -30,12 +34,29 @@ has _field2column_map => qw/ is ro /, default => sub { {} };
 has _field2inflate_map => qw/ is ro /, default => sub { {} };
 has _field2deflate_map => qw/ is ro /, default => sub { {} };
 
+sub create {
+    my $self = shift;
+    return $self->create_object( @_ );
+}
+
+sub create_object {
+    my $self = shift;
+    my $target = shift;
+
+    my $data = $self->deserialize( $target );
+    my $entity = $self->inflate( $data );
+    my $object = $self->wrap( $entity );
+
+    return $object;
+}
+
 sub set {
     my $self = shift;
     my $key = shift;
-    my $data = shift;
+    my $target = shift;
 
-    $data = $self->deflate( $data );
+    my $entity = $self->unwrap( $target );
+    my $data = $self->deflate( $entity );
     my $value = $self->serialize( $data );
 
     $self->store->schema->resultset( '__Store__' )->update_or_create(
@@ -65,35 +86,92 @@ sub get {
         { key => 'primary' },
     );
 
-    my $value = $result->get_column( '__value__' );
+    return unless $result;
+
+    return $self->process_get( $result->get_column( '__value__' ) );
+}
+
+sub delete {
+    my $self = shift;
+    my $key = shift;
+
+    my $result = $self->store->schema->resultset( '__Store__' )->find(
+        { __model__ => $self->name, __key__ => $key },
+        { key => 'primary' },
+    );
+    if ( $result ) {
+        $result->delete;
+    }
+
+    $result = $self->store->schema->resultset( $self->name )->find( 
+        { $self->key_column => $key }, { key => 'primary' } );
+    if ( $result ) {
+        $result->delete;
+    }
+}
+
+sub process_get {
+    my $self = shift;
+    my $value = shift;
+
     my $data = $self->deserialize( $value );
-    return $self->inflate( $data );
+    my $entity = $self->inflate( $data );
+    my $object = $self->wrap( $entity );
+
+    return $object;
+}
+
+sub wrap {
+    my $self = shift;
+    my $entity = shift;
+
+    if ( my $wrapper = $self->wrapper ) {
+        if ( ref $wrapper eq 'CODE' ) {
+            return $wrapper->( $entity );
+        }
+        else {
+            return $wrapper->new( _entity => $entity );
+        }
+    }
+
+    return $entity;
+}
+
+sub unwrap {
+    my $self = shift;
+    my $target = shift;
+
+    return $target->_entity if blessed $target;
+    return $target;
 }
 
 sub inflate {
     my $self = shift;
     my $data = shift;
 
+    my $entity = clone $data;
+    
     while( my ( $field, $inflator ) = each %{ $self->_field2inflate_map } ) {
-        $data->{ $field } = $inflator->( $data->{ $field } ) if defined $data->{ $field };
+        $entity->{ $field } = $inflator->( $entity->{ $field } ) if defined $entity->{ $field };
     }
-    #if ( my $inflate = $self->_inflate ) {
-        #$data = $inflate->( $data, $self );
-    #}
 
-    return $data;
+    return $entity;
 }
 
 sub deflate {
     my $self = shift;
-    my $data = shift;
+    my $target = shift;
+
+    my $data = {};
 
     while( my ( $field, $deflator ) = each %{ $self->_field2deflate_map } ) {
-        $data->{ $field } = $deflator->( $data->{ $field } ) if defined $data->{ $field };
+        $data->{ $field } = $deflator->( $target->{ $field } ) if defined $target->{ $field };
     }
-    #if ( my $deflate = $self->_deflate ) {
-        #$data = $deflate->( $data, $self );
-    #}
+
+    while( my ( $key, $value ) = each %$target ) {
+        next if exists $data->{ $key };
+        $data->{ $key } = ref $value ? clone $value : $value;
+    }
 
     return $data;
 }
@@ -102,6 +180,8 @@ sub deserialize {
     my $self = shift;
     my $value  = shift;
 
+    return $value if ref $value;
+
     my $data = $self->store->json->decode( $value );
     return $data;
 }
@@ -109,6 +189,8 @@ sub deserialize {
 sub serialize {
     my $self = shift;
     my $data = shift;
+
+    return $data if ! ref $data;
 
     my $value = $self->store->json->encode( $data );
     return $value;
