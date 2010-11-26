@@ -5,7 +5,7 @@ use Modern::Perl;
 use Any::Moose;
 use Clone qw/ clone /;
 
-has store => qw/ is ro required 1 weak_ref 1 /;
+has store => qw/ is ro required 1 weak_ref 1 /, handles => [qw/ storage /];
 has name => qw/ reader name writer _name required 1 /;
 
 has inflate => qw/ accessor _inflate isa Maybe[CodeRef] /;
@@ -34,6 +34,28 @@ has _field2column_map => qw/ is ro /, default => sub { {} };
 has _field2inflate_map => qw/ is ro /, default => sub { {} };
 has _field2deflate_map => qw/ is ro /, default => sub { {} };
 
+sub _store_set {
+    my $self = shift;
+    return $self->store->schema->resultset( '__Store__' );
+}
+
+sub _index_set {
+    my $self = shift;
+    return $self->store->schema->resultset( $self->name );
+}
+
+sub _find {
+    my $self = shift;
+    my $key = shift;
+
+    my $result = $self->_store_set->find(
+        { __model__ => $self->name, __key__ => $key },
+        { key => 'primary' },
+    );
+
+    return $result;
+}
+
 sub create {
     my $self = shift;
     return $self->create_object( @_ );
@@ -59,7 +81,7 @@ sub set {
     my $data = $self->deflate( $entity );
     my $value = $self->serialize( $data );
 
-    $self->store->schema->resultset( '__Store__' )->update_or_create(
+    $self->_store_set->update_or_create(
         { __model__ => $self->name, __key__ => $key, __value__ => $value },
         { key => 'primary' },
     );
@@ -77,48 +99,40 @@ sub set {
     }
 }
 
+sub exists {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->_store_set->search({ __key__ => $key })->count;
+}
+
 sub get {
     my $self = shift;
     my $key = shift;
 
-    my $result = $self->store->schema->resultset( '__Store__' )->find(
-        { __model__ => $self->name, __key__ => $key },
-        { key => 'primary' },
-    );
+    my $result = $self->_find( $key );
 
     return unless $result;
 
-    return $self->process_get( $result->get_column( '__value__' ) );
+    return $self->create_object( $result->get_column( '__value__' ) );
 }
 
 sub delete {
     my $self = shift;
     my $key = shift;
 
-    my $result = $self->store->schema->resultset( '__Store__' )->find(
-        { __model__ => $self->name, __key__ => $key },
-        { key => 'primary' },
+    my $result = $self->_find( $key );
+    if ( $result ) {
+        $result->delete;
+    }
+
+    $result = $self->_search_set( 
+        { $self->key_column => $key },
+        { key => 'primary' }
     );
     if ( $result ) {
         $result->delete;
     }
-
-    $result = $self->store->schema->resultset( $self->name )->find( 
-        { $self->key_column => $key }, { key => 'primary' } );
-    if ( $result ) {
-        $result->delete;
-    }
-}
-
-sub process_get {
-    my $self = shift;
-    my $value = shift;
-
-    my $data = $self->deserialize( $value );
-    my $entity = $self->inflate( $data );
-    my $object = $self->wrap( $entity );
-
-    return $object;
 }
 
 sub wrap {
@@ -261,10 +275,12 @@ sub register_result_class {
     $schema->register_class( $name => $result_class );
 
     my $table = $result_class->table;
-    my $sql = $schema->build_sql;
-    my @sql = split m/;\n/, $sql;
-    my ( $create ) = grep { m/(?:(?i)CREATE\s+TABLE\s+)$table/ } @sql;
-    my ( $drop ) = grep { m/(?:(?i)DROP\s+TABLE\s+.*)$table/ } @sql;
+    my $deployment_statements = $schema->build_deployment_statements;
+    my @deployment_statements = split m/;\n/, $deployment_statements;
+    my ( $create ) = grep { m/(?:(?i)CREATE\s+TABLE\s+)$table/ } @deployment_statements;
+    my ( $drop ) = grep { m/(?:(?i)DROP\s+TABLE\s+.*)$table/ } @deployment_statements;
+
+    s/^\s*//, s/\s*$// for $create, $drop;
 
     $self->create_statement( $create );
     $self->drop_statement( $drop );
@@ -279,7 +295,7 @@ sub deploy {
     my ( $count ) = $store->dbh->selectrow_array(
         "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", undef, $name );
     if ( ! $count ) {
-        $store->dbh->do( $self->create_statement );
+        $store->storage->do( $self->create_statement );
     }
 }
 

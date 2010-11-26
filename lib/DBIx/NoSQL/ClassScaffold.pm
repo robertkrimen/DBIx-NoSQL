@@ -79,17 +79,26 @@ extends qw/ DBIx::Class::Schema /;
 use JSON; our $json = JSON->new->pretty;
 use Digest::SHA qw/ sha1_hex /;
 
-has sql => qw/ is ro lazy_build 1 /;
-sub _build_sql {
-    return shift->build_sql;
+has store => qw/ is rw weak_ref 1 /;
+
+has deployment_statements => qw/ accessor _deployment_statements lazy_build 1 /;
+sub _build_deployment_statements {
+    return shift->build_deployment_statements;
 }
 
-sub build_sql {
+sub build_deployment_statements {
     my $self = shift;
     my $sql = $self->deployment_statements( undef, undef, undef, { add_drop_table => 1 } );
     $sql =~ s/^--[^\n]*$//gsm;
     return $sql;
 }
+
+around deployment_statements => sub {
+    my $inner = shift;
+    my $self = shift;
+    return $inner->( $self, @_ ) if @_;
+    return $self->_deployment_statements;
+};
 
 has version => qw/ is ro lazy_build 1 /;
 sub _build_version {
@@ -100,16 +109,11 @@ sub _build_version {
 sub deploy {
     my $self = shift;
 
-    my $sql = $self->sql;
-    my @sql = split m/;\n/, $sql;
-    print STDERR join "\n", @sql, '';
-    my $dbh = $self->storage->dbh;
-    $dbh->do( $_ ) for @sql;
+    my $deployment_statements = $self->deployment_statements;
+    s/^\s*//, s/\s*$// for $deployment_statements;
+    my @deployment_statements = split m/;\n\s*/, $deployment_statements;
 
-    #$self->jourpl->database->query(
-        #'INSERT INTO __meta__ (version) VALUES (?)',
-        #$self->version,
-    #);
+    $self->store->storage->do( $_ ) for @deployment_statements;
 }
 
 package DBIx::NoSQL::ClassScaffold::ResultClass;

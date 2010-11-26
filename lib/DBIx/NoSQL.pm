@@ -21,6 +21,13 @@ sub _build_dbh {
     return $self->schema->storage->dbh;
 }
 
+has storage => qw/ is ro lazy_build 1 /;
+sub _build_storage {
+    my $self = shift;
+    require DBIx::NoSQL::Storage;
+    return DBIx::NoSQL::Storage->new( store => $self );
+}
+
 has _model => qw/ is ro lazy_build 1 /;
 sub _build__model { {} }
 
@@ -74,6 +81,7 @@ sub _build_schema {
 
     $store_result_class->register( $schema_class, $store_result_class->table );
     my $schema = $self->schema_class->connect( "dbi:SQLite:dbname=$database" );
+    $schema->store( $self );
     return $schema;
 }
 

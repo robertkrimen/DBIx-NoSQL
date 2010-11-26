@@ -1,0 +1,157 @@
+package DBIx::NoSQL::Storage;
+
+use Any::Moose;
+use Carp;
+
+has store => qw/ is ro required 1 weak_ref 1 /;
+
+has statement_caching => qw/ is rw isa Bool default 0 /;
+
+has foreign_storage => qw/ is ro lazy_build 1 weak_ref 1 /;
+sub _build_foreign_storage {
+    my $self = shift;
+    return $self->store->schema->storage;
+}
+
+sub do {
+    my $self = shift;
+    my $statement = shift;
+    my @bind = @_;
+
+    my $attributes;
+    $attributes = shift @bind if @bind && ref $bind[0] eq 'HASH';
+
+    $self->_query_start( $statement => @bind );
+    $self->foreign_storage->dbh_do( sub {
+        $_[1]->do( $statement, $attributes, @bind );
+    } );
+    $self->_query_end( $statement => @bind );
+}
+
+sub retrying_do {
+    my $self = shift;
+    my $code = shift;
+
+    return $self->foreign_storage->dbh_do( $code, @_ );
+}
+
+sub select {
+    my $self = shift;
+    my $statement = shift;
+    my $attributes = shift;
+    my $bind = shift;
+
+    $self->_query_start( $statement => @$bind );
+
+    my $foreign = $self->foreign_storage;
+    my $sth = $foreign->dbh_do( sub {
+        my $dbh = $_[1];
+        my $sth = $self->statement_caching ?
+            $dbh->prepare_cached( $statement, $attributes || {}, 3 ) :
+            $dbh->prepare( $statement, $attributes || {} )
+        ;
+        croak $dbh->errstr unless $sth;
+        return $sth;
+    } );
+
+    my $rv = $sth->execute( @$bind );
+    croak $sth->errstr || $sth->err || "Unknown error: \$sth->execute return false without setting an error flag" unless $rv;
+
+    $self->_query_end( $statement, @$bind );
+
+    return $sth;
+}
+
+sub cursor {
+    my $self = shift;
+    my $statement = shift;
+    my $attributes;
+    $attributes = shift if ref $_[0] eq 'HASH';
+    my $bind = shift;
+
+    return DBIx::NoSQL::Storage::Cursor->new( storage => $self, statement => $statement, attributes => $attributes, bind => $bind );
+}
+
+sub _query_start {
+    my $self = shift;
+    if ( $self->foreign_storage->debug ) {
+        $self->foreign_storage->debugobj->query_start( @_ );
+    }
+}
+
+sub _query_end {
+    my $self = shift;
+    if ( $self->foreign_storage->debug ) {
+        $self->foreign_storage->debugobj->query_end( @_ );
+    }
+}
+
+
+package DBIx::NoSQL::Storage::Cursor;
+
+use Any::Moose;
+use Try::Tiny;
+
+has storage => qw/ is ro required 1 /;
+
+has statement => qw/ is ro required 1 /; 
+has attributes => qw/ is ro /;
+has bind => qw/ is ro required 1 isa ArrayRef /;
+
+has sth => qw/ is rw /;
+has finished => qw/ is rw isa Bool default 0 /;
+
+sub _select {
+    my $self = shift;
+    return $self->storage->select( $self->statement, $self->attributes, $self->bind );
+}
+
+sub next {
+    my $self = shift;
+
+    return if $self->finished;
+
+    unless ( $self->sth ) {
+        $self->sth( $self->_select );
+    }
+
+    my $row = $self->sth->fetchrow_arrayref;
+    if ( $row ) {
+    }
+    else {
+        $self->sth( undef );
+        $self->finished( 0 );
+    }
+
+    return $row;
+}
+
+sub all {
+    my $self = shift;
+
+    $self->sth->finish if $self->sth && $self->sth->{Active};
+    $self->sth( undef );
+    my $sth;
+    $self->storage->retrying_do( sub {
+        $sth = $self->_select;
+    } );
+    my $all = $sth->fetchall_arrayref;
+    return [] unless $all;
+    return $all;
+}
+
+sub reset {
+    my $self = shift;
+
+    try { $self->sth->finish } if $self->sth && $self->sth->{Active};
+    $self->_soft_reset;
+}
+
+sub _soft_reset {
+    my $self = shift;
+
+    $self->sth( undef );
+    $self->finished( 0 );
+}
+
+1;

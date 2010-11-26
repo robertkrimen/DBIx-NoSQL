@@ -5,11 +5,24 @@ use Modern::Perl;
 use Any::Moose;
 use Hash::Merge::Simple qw/ merge /;
 
-has entity_model => qw/ is ro required 1 /;
+has entity_model => qw/ is ro required 1 /, handles => [qw/ store storage /];
 
 has [qw/ _where /] => qw/ is rw isa Maybe[HashRef] /;
 has [qw/ _order_by /] => qw/ is rw isa Maybe[ArrayRef] /;
 has [qw/ _limit _offset /] => qw/ is rw /;
+
+has cursor => qw/ is ro lazy_build 1 /;
+sub _build_cursor {
+    my $self = shift;
+    $self->_cursor( 'value' );
+}
+
+sub _cursor {
+    my $self = shift;
+    my $target = shift;
+    my ( $statement, @bind ) = $self->prepare( $target );
+    return $self->storage->cursor( $statement, \@bind );
+}
 
 sub where {
     my $self = shift;
@@ -97,26 +110,25 @@ sub prepare {
 
 sub get {
     my $self = shift;
-    my ( $statement, @bind ) = $self->prepare( 'value' );
+
     my $entity_model = $self->entity_model;
-    my $result = $entity_model->store->dbh->selectall_arrayref( $statement, undef, @bind );
-    return map { $entity_model->process_get( $_->[0] ) } @$result;
+    my $all = $self->cursor->all;
+    return map { $entity_model->create_object( $_->[0] ) } @$all;
 }
 
 sub fetch {
     my $self = shift;
 
-    my ( $statement, @bind ) = $self->prepare( 'value' );
     my $entity_model = $self->entity_model;
-    my $result = $entity_model->store->dbh->selectall_arrayref( $statement, undef, @bind );
-    return map { $entity_model->deserialize( $_->[0] ) } @$result;
+    my $all = $self->cursor->all;
+    return map { $entity_model->deserialize( $_->[0] ) } @$all;
 }
 
 sub count {
     my $self = shift;
 
-    my ( $statement, @bind ) = $self->prepare( 'count' );
-    my $result = $self->entity_model->store->dbh->selectrow_arrayref( $statement, undef, @bind );
+    my $cursor = $self->_cursor( 'count' );
+    return unless my $result = $cursor->next;
     return $result->[0];
 }
 
