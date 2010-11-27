@@ -120,25 +120,38 @@ sub _build_schema {
         if ( ! $database ) {
             die "Unable to connect schema to database because no connection or database are defined";
         }
-        $connection = "dbi:SQLite:dbname=$database";
+        $connection = $database;
     }
-    $connection = [ $connection ] unless ref $connection eq 'ARRAY';
 
-    my $schema = $self->schema_class->connect( @$connection );
-    $schema->store( $self );
+    my $schema = $self->connect( $connection );
     return $schema;
 }
 
 sub schema {
     my $self = shift;
-    return $self->_schema if $self->_has_schema;
-    my $database = file $self->database;
-    my $exists = -s $database;
-    my $schema = $self->_schema;
-    unless ( $exists ) {
-        $database->parent->mkpath;
+    return $self->_schema( @_ );
+}
+
+sub connect {
+    my $self = shift;
+    my $connection = shift;
+
+    my $database_file;
+    if ( blessed $connection && $connection->isa( 'Path::Class::File' ) ) {
+        $database_file = $connection;
+        $database_file->parent->mkpath; # TODO Make this optional?
+        $connection = "dbi:SQLite:dbname=$database_file";
+    }
+
+    $connection = [ $connection ] unless ref $connection eq 'ARRAY';
+    my $schema = $self->schema_class->connect( @$connection );
+    $schema->store( $self );
+    $self->_schema( $schema );
+
+    if ( ! $self->storage->table_exists( '__Store__' ) ) {
         $schema->deploy;
     }
+
     return $schema;
 }
 

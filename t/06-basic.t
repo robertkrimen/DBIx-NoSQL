@@ -11,3 +11,12 @@ $store = DBIx::NoSQL->new();
 
 ok( $store );
 
+$model = $store->model( 'Artist' );
+$model->field( name => ( index => 1 ) );
+$model->field( date => ( index => 1, isa => 'DateTime' ) );
+
+$store->connect( $store_file );
+
+$store->model( 'Artist' )->set( 1 => { Xyzzy => 1 } );
+
+done_testing;
