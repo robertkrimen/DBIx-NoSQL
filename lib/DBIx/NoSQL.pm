@@ -13,7 +13,7 @@ eval { require JSON::XS; };
 our $json = JSON->new->pretty;
 sub json { $json }
 
-use DBIx::NoSQL::Entitymodel;
+use DBIx::NoSQL::Model;
 
 has dbh => qw/ is ro lazy_build 1 /;
 sub _build_dbh {
@@ -42,7 +42,7 @@ sub model {
     my $self = shift;
     my $name = shift or die "Missing model name";
 
-    return $self->_model->{ $name } ||= DBIx::NoSQL::EntityModel->new( store => $self, name => $name );
+    return $self->_model->{ $name } ||= DBIx::NoSQL::Model->new( store => $self, name => $name );
 }
 
 sub prepare {

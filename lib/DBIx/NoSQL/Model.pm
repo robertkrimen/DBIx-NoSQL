@@ -1,4 +1,4 @@
-package DBIx::NoSQL::EntityModel;
+package DBIx::NoSQL::Model;
 
 use Modern::Perl;
 
@@ -22,14 +22,14 @@ sub wrapper { return shift->_wrap( @_ ) }
 has field_map => qw/ is ro lazy_build 1 isa HashRef /;
 sub _build_field_map { {} }
 sub field {
-    require DBIx::NoSQL::EntityModel::Field;
+    require DBIx::NoSQL::Model::Field;
     my $self = shift;
     my $name = shift;
 
     return $self->field_map->{ $name } unless @_;
 
     die "Already have field ($name)" if $self->field_map->{ $name };
-    my $field = $self->field_map->{ $name } = DBIx::NoSQL::EntityModel::Field->new( name => $name );
+    my $field = $self->field_map->{ $name } = DBIx::NoSQL::Model::Field->new( name => $name );
     $field->setup( $self, @_ );
     return $field;
 }
@@ -242,7 +242,7 @@ sub search {
     die "Trying to search on an unindexed model" unless $self->indexable;
 
     require DBIx::NoSQL::Search;
-    my $search = DBIx::NoSQL::Search->new( entity_model => $self );
+    my $search = DBIx::NoSQL::Search->new( model => $self );
 
     if ( @_ ) {
         $search->_where( $_[0] );

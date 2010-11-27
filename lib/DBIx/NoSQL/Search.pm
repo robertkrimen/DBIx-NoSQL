@@ -5,7 +5,7 @@ use Modern::Perl;
 use Any::Moose;
 use Hash::Merge::Simple qw/ merge /;
 
-has entity_model => qw/ is ro required 1 /, handles => [qw/ store storage /];
+has model => qw/ is ro required 1 /, handles => [qw/ store storage /];
 
 has [qw/ _where /] => qw/ is rw isa Maybe[HashRef] /;
 has [qw/ _order_by /] => qw/ is rw isa Maybe[ArrayRef] /;
@@ -54,7 +54,7 @@ sub clone {
     my @override = @_;
 
     return ( ref $self )->new(
-        entity_model => $self->entity_model,
+        model => $self->model,
         _where => $self->_where,
         _order_by => $self->_order_by,
         _limit => $self->_limit,
@@ -85,7 +85,7 @@ sub prepare {
     my $maker = DBIx::Class::SQLMaker->new;
 
     my $entity_table = '__Store__';
-    my $model_name = $self->entity_model->name;
+    my $model_name = $self->model->name;
     my $search_table = $model_name;
     my $search_key_column = 'key';
 
@@ -111,17 +111,17 @@ sub prepare {
 sub get {
     my $self = shift;
 
-    my $entity_model = $self->entity_model;
+    my $model = $self->model;
     my $all = $self->cursor->all;
-    return map { $entity_model->create_object( $_->[0] ) } @$all;
+    return map { $model->create_object( $_->[0] ) } @$all;
 }
 
 sub fetch {
     my $self = shift;
 
-    my $entity_model = $self->entity_model;
+    my $model = $self->model;
     my $all = $self->cursor->all;
-    return map { $entity_model->deserialize( $_->[0] ) } @$all;
+    return map { $model->deserialize( $_->[0] ) } @$all;
 }
 
 sub count {

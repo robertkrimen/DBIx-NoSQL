@@ -1,4 +1,4 @@
-package DBIx::NoSQL::EntityModel::Field;
+package DBIx::NoSQL::Model::Field;
 
 use Modern::Perl;
 
