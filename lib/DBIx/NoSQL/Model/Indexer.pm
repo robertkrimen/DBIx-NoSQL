@@ -1,6 +1,7 @@
 package DBIx::NoSQL::Model::Indexer;
 
-use Modern::Perl;
+use strict;
+use warnings;
 
 use Any::Moose;
 use Clone qw/ clone /;

@@ -1,0 +1,49 @@
+NAME
+    DBIx::NoSQL - Experimental NoSQL-ish overlay for an SQL database
+
+VERSION
+    version 0.0010
+
+SYNOPSIS
+        use DBIx::NoSQL;
+
+        my $store = DBIx::NoSQL->new;
+
+        $store->connect( 'store.sqlite' );
+
+        $store->set( 'Artist' => 'Smashing Pumpkins' => {
+            name => 'Smashing Pumpkins',
+            genre => 'rock',
+            website => 'smashingpumpkins.com',
+        } );
+
+        $store->search( 'Artist' )->count; # 1
+
+        my $artist = $store->get( 'Artist' => 'Smashing Pumpkins' );
+
+DESCRIPTION
+    DBIx::NoSQL is a layer over DBI that presents a NoSQLish way to store
+    and retrieve data. You do not need to set up a schema beforehand to
+    start putting data into your store.
+
+    Currently, it does this by using JSON for serialization and is only
+    compatible with SQLite (though additional database support should not
+    difficult to implement)
+
+    The API is fairly sane, though still "alpha" quality
+
+USAGE
+SEE ALSO
+    KiokuDB
+
+    DBIx::Class
+
+AUTHOR
+    Robert Krimen <robertkrimen@gmail.com>
+
+COPYRIGHT AND LICENSE
+    This software is copyright (c) 2010 by Robert Krimen.
+
+    This is free software; you can redistribute it and/or modify it under
+    the same terms as the Perl 5 programming language system itself.
+

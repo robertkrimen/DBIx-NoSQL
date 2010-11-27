@@ -1,6 +1,7 @@
 package DBIx::NoSQL::Model::Field;
 
-use Modern::Perl;
+use strict;
+use warnings;
 
 use Any::Moose;
 

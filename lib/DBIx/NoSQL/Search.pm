@@ -1,6 +1,7 @@
 package DBIx::NoSQL::Search;
 
-use Modern::Perl;
+use strict;
+use warnings;
 
 use Any::Moose;
 use Hash::Merge::Simple qw/ merge /;
