@@ -71,6 +71,25 @@ sub create_object {
     return $object;
 }
 
+sub create_entity {
+    my $self = shift;
+    my $target = shift;
+
+    my $data = $self->deserialize( $target );
+    my $entity = $self->inflate( $data );
+
+    return $entity;
+}
+
+sub create_data {
+    my $self = shift;
+    my $target = shift;
+
+    my $data = $self->deserialize( $target );
+
+    return $data;
+}
+
 sub set {
     my $self = shift;
     my $key = shift;

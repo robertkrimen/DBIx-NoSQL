@@ -109,20 +109,50 @@ sub prepare {
     return ( $statement, @bind );
 }
 
-sub get {
+sub all {
     my $self = shift;
+    my %options = @_;
 
     my $model = $self->model;
+    my $as = $options{ as } || 'object';
+
+    my $cursor = $self->cursor;
     my $all = $self->cursor->all;
-    return map { $model->create_object( $_->[0] ) } @$all;
+
+    if      ( $as eq 'object' ) { return map { $model->create_object( $_->[0] ) } @$all }
+    elsif   ( $as eq 'entity' ) { return map { $model->create_entity( $_->[0] ) } @$all }
+    elsif   ( $as eq 'data' ||
+              $as eq 'hash' )   { return map { $model->create_data( $_->[0] ) } @$all }
+    elsif   ( $as eq 'value' )  { return @$all }
+    else                        { die "Invalid inflation target ($as)" }
+}
+
+sub next {
+    my $self = shift;
+    my %options = @_;
+
+    my $model = $self->model;
+    my $as = $options{ as } || 'object';
+
+    my $cursor = $self->cursor;
+    my $value = $cursor->next;
+
+    if      ( $as eq 'object' ) { return $model->create_object( $value ) }
+    elsif   ( $as eq 'entity' ) { return $model->create_entity( $value ) }
+    elsif   ( $as eq 'data' ||
+              $as eq 'hash' )   { return $model->create_data( $value ) }
+    elsif   ( $as eq 'value' )  { return $value }
+    else                        { die "Invalid inflation target ($as)" }
 }
 
 sub fetch {
     my $self = shift;
+    return $self->all( as => 'data', @_ );
+}
 
-    my $model = $self->model;
-    my $all = $self->cursor->all;
-    return map { $model->deserialize( $_->[0] ) } @$all;
+sub get {
+    my $self = shift;
+    return $self->all( @_ );
 }
 
 sub count {
