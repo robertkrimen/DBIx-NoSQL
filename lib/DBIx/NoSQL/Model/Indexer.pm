@@ -54,17 +54,11 @@ sub prepare {
 
     $self->register_result_class;
 
-    my $name = $self->model->name;
-    my $stash_schema_digest = $self->store->stash->value( "mode.$name.index.schema_digest" );
-
-    if ( ! $stash_schema_digest ) {
+    if ( ! $self->exists ) {
         $self->deploy;
     }
-    else {
-        my $schema_digest = $self->schema_digest;
-        if ( $schema_digest ne $stash_schema_digest ) {
-            $self->redeploy;
-        }
+    elsif ( ! $self->same ) {
+        $self->redeploy;
     }
 }
 
