@@ -80,9 +80,19 @@ sub set {
     my $key = shift;
     my $target = shift;
 
-    my $entity = $self->unwrap( $target );
-    my $data = $self->deflate( $entity );
-    my $value = $self->serialize( $data );
+    my ( $entity, $data, $value );
+
+    if ( blessed $target ) {
+        $entity = $self->unwrap( $target );
+        $target = $entity;
+    }
+
+    if ( ref $target ) {
+        $data = $self->deflate( $target );
+        $target = $data;
+    }
+
+    $value = $self->serialize( $target );
 
     $self->_store_set->update_or_create(
         { __model__ => $self->name, __key__ => $key, __value__ => $value },
@@ -91,17 +101,28 @@ sub set {
 
     return unless $self->indexable;
 
-    {
-        my %set;
-        $set{ $self->key_column } = $key;
-        while( my ( $field, $column ) = each %{ $self->_field2column_map } ) {
-            $set{ $column } = $data->{ $field };
-        }
+    $self->_set_index( $key => $data );
+}
 
-        $self->store->schema->resultset( $self->name )->update_or_create(
-            \%set, { key => 'primary' },
-        );
+sub _set_index {
+    my $self = shift;
+    my $key = shift;
+    my $target = shift;
+
+    my $data = $target;
+    if ( $data && ! ref $data ) {
+        $data = $self->deserialize( $target );
     }
+
+    my %set;
+    $set{ $self->key_column } = $key;
+    while( my ( $field, $column ) = each %{ $self->_field2column_map } ) {
+        $set{ $column } = $data->{ $field };
+    }
+
+    $self->store->schema->resultset( $self->name )->update_or_create(
+        \%set, { key => 'primary' },
+    );
 }
 
 sub exists {
@@ -241,7 +262,19 @@ sub prepare {
     return unless $self->indexable;
 
     $self->register_result_class;
-    $self->deploy;
+
+    my $name = $self->name;
+    my $stash_schema_digest = $self->store->stash->value( "mode.$name.index.schema_digest" );
+
+    if ( ! $stash_schema_digest ) {
+        $self->deploy;
+    }
+    else {
+        my $schema_digest = $self->schema_digest;
+        if ( $schema_digest ne $stash_schema_digest ) {
+            $self->redeploy;
+        }
+    }
 }
 
 has result_class_scaffold => qw/ is ro lazy_build 1 /;
@@ -306,7 +339,22 @@ sub deploy {
     my ( $count ) = $store->dbh->selectrow_array(
         "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", undef, $name );
     if ( ! $count ) {
+        $self->store->stash->value( "mode.$name.index.schema_digest" => $self->schema_digest );
         $store->storage->do( $self->create_statement );
+    }
+}
+
+sub redeploy {
+    my $self = shift;
+
+    my $store = $self->store;
+
+    $store->storage->do( $self->drop_statement );
+    $store->storage->do( $self->create_statement );
+
+    my @result = $self->_store_set->search( { __model__ => $self->name } )->all;
+    for my $result ( @result ) {
+        $self->_set_index( $result->get_column( '__key__' ), $result->get_column( '__value__' ) );
     }
 }
 
