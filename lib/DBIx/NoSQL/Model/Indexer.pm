@@ -1,4 +1,4 @@
-package DBIx::NoSQL::Model::Index;
+package DBIx::NoSQL::Model::Indexer;
 
 use Modern::Perl;
 
@@ -122,27 +122,59 @@ sub register_result_class {
     $self->schema_digest( sha1_hex $create );
 }
 
+sub stash_schema_digest {
+    my $self = shift;
+    my $model = $self->model->name;
+    return $self->store->stash->value( "mode.$model.index.schema_digest", @_ );
+}
+
+sub exists {
+    my $self = shift;
+
+    return $self->storage->table_exists( $self->model->name );
+}
+
+sub same {
+    my $self = shift;
+
+    return unless my $stash_schema_digest = $self->stash_schema_digest;
+    return unless my $schema_digest = $self->schema_digest;
+    return $schema_digest eq $stash_schema_digest;
+}
+
 sub deploy {
     my $self = shift;
 
-    my $store = $self->store;
-    my $name = $self->model->name;
-
-    my ( $count ) = $store->dbh->selectrow_array(
-        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", undef, $name );
-    if ( ! $count ) {
-        $self->store->stash->value( "mode.$name.index.schema_digest" => $self->schema_digest );
-        $store->storage->do( $self->create_statement );
+    if ( $self->exists ) {
+        if ( $self->same ) {
+            return;
+        }
+        else {
+            my $model = $self->model->name;
+            warn "Indexer schema mismatch for model ($model)";
+            return;
+        }
     }
+
+    $self->store->storage->do( $self->create_statement );
+    $self->stash_schema_digest( $self->schema_digest );
+}
+
+sub undeploy {
+    my $self = shift;
+    $self->store->storage->do( $self->drop_statement );
 }
 
 sub redeploy {
     my $self = shift;
 
-    my $store = $self->store;
+    $self->undeploy;
+    $self->deploy;
+    $self->reindex;
+}
 
-    $store->storage->do( $self->drop_statement );
-    $store->storage->do( $self->create_statement );
+sub reindex {
+    my $self = shift;
 
     my @result = $self->model->_store_set->search( { __model__ => $self->model->name } )->all;
     for my $result ( @result ) {

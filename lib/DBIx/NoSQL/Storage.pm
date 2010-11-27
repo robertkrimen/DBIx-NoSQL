@@ -86,6 +86,19 @@ sub _query_end {
     }
 }
 
+sub table_exists {
+    my $self = shift;
+    my $table_name = shift;
+
+    my $statement = <<_END_;
+SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?
+_END_
+    my @bind = ( $table_name );
+
+    my $cursor = $self->cursor( $statement, \@bind );
+    my $result = $cursor->next;
+    return $result->[0] ? 1 : 0;
+}
 
 package DBIx::NoSQL::Storage::Cursor;
 

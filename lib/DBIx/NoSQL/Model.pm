@@ -42,11 +42,6 @@ sub _store_set {
     return $self->store->schema->resultset( '__Store__' );
 }
 
-sub _index_set {
-    my $self = shift;
-    return $self->store->schema->resultset( $self->name );
-}
-
 sub _find {
     my $self = shift;
     my $key = shift;
@@ -217,10 +212,10 @@ sub serialize {
 
 has indexer => qw/ is ro lazy_build 1 /;
 sub _build_indexer {
-    require DBIx::NoSQL::Model::Index;
+    require DBIx::NoSQL::Model::Indexer;
     my $self = shift;
     return unless $self->_index;
-    return DBIx::NoSQL::Model::Index->new( model => $self );
+    return DBIx::NoSQL::Model::Indexer->new( model => $self );
 }
 
 sub index {
