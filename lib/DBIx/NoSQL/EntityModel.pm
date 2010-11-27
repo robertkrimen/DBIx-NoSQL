@@ -4,9 +4,12 @@ use Modern::Perl;
 
 use Any::Moose;
 use Clone qw/ clone /;
+use Digest::SHA qw/ sha1_hex /;
 
 has store => qw/ is ro required 1 weak_ref 1 /, handles => [qw/ storage /];
 has name => qw/ reader name writer _name required 1 /;
+
+has indexable => qw/ is rw isa Bool default 1 /;
 
 has inflate => qw/ accessor _inflate isa Maybe[CodeRef] /;
 has deflate => qw/ accessor _deflate isa Maybe[CodeRef] /;
@@ -85,6 +88,8 @@ sub set {
         { __model__ => $self->name, __key__ => $key, __value__ => $value },
         { key => 'primary' },
     );
+
+    return unless $self->indexable;
 
     {
         my %set;
@@ -213,6 +218,8 @@ sub serialize {
 sub search {
     my $self = shift;
 
+    die "Trying to search on an unindexed model" unless $self->indexable;
+
     require DBIx::NoSQL::Search;
     my $search = DBIx::NoSQL::Search->new( entity_model => $self );
 
@@ -226,10 +233,13 @@ sub search {
 has key_column => qw/ is rw isa Str lazy_build 1 /;
 sub _build_key_column { 'key' }
 
-has [qw/ create_statement drop_statement /] => qw/ is rw isa Maybe[Str] /;
+has [qw/ create_statement drop_statement schema_digest /] => qw/ is rw isa Maybe[Str] /;
 
 sub prepare {
     my $self = shift;
+
+    return unless $self->indexable;
+
     $self->register_result_class;
     $self->deploy;
 }
@@ -284,6 +294,7 @@ sub register_result_class {
 
     $self->create_statement( $create );
     $self->drop_statement( $drop );
+    $self->schema_digest( sha1_hex $create );
 }
 
 sub deploy {

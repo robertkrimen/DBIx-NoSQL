@@ -61,6 +61,15 @@ sub search {
     return $model->search( @_ );
 }
 
+has stash => qw/ is ro lazy_build 1 /;
+sub _build_stash {
+    require DBIx::NoSQL::Stash;
+    my $self = shift;
+    my $stash = DBIx::NoSQL::Stash->new( store => $self );
+    $stash->model->prepare;
+    return $stash;
+}
+
 has database => qw/ is ro required 1 /;
 
 require DBIx::NoSQL::ClassScaffold;
