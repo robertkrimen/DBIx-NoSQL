@@ -22,14 +22,14 @@ ok( $store );
 $model = $store->model( 'Artist' );
 $model->field( Xyzzy => ( index => 1 ) );
 $model->field( date => ( index => 1, isa => 'DateTime' ) );
-$model->prepare;
 
 $store->model( 'Artist' )->set( 1 => { Xyzzy => 1, rank => 'rank2' } );
 $store->model( 'Artist' )->set( 2 => { Xyzzy => 2, rank => 'rank1' } );
 $store->model( 'Artist' )->set( 3 => { Xyzzy => 3 } );
 
 $model->field( rank => ( index => 1 ) );
-$model->index->redeploy;
+
+$store->migrate;
 
 cmp_deeply( [ $store->search( 'Artist' )->order_by( 'rank' )->fetch ], [
     { Xyzzy => 3 },

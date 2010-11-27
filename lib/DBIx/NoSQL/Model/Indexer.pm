@@ -177,12 +177,26 @@ sub undeploy {
 
 sub redeploy {
     my $self = shift;
+    my %options = @_;
 
-    $self->register_result_class;
+    exists $options{ $_ } or $options{ $_ } = 1 for qw/ register /;
+
+    $self->register_result_class if $options{ register };
     $self->undeploy;
     $self->_deploy;
     $self->reindex;
     $self->prepared( 1 );
+}
+
+sub reset {
+    my $self = shift;
+    $self->register_result_class;
+}
+
+sub migrate {
+    my $self = shift;
+
+    return $self->redeploy( @_ );
 }
 
 sub reindex {

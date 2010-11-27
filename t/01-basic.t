@@ -21,11 +21,9 @@ ok( $store );
 
 throws_ok { $store->storage->do( 'Xyzzy' ) } qr/syntax error \[for Statement "Xyzzy"\]/;
 
-$store->prepare(qw/ Artist /);
 $model = $store->model( 'Album' );
 $model->field( name => ( index => 1 ) );
 $model->field( date => ( index => 1, isa => 'DateTime' ) );
-$model->prepare;
 
 $store->model( 'Artist' )->set( 1 => { Xyzzy => 1 } );
 $store->model( 'Artist' )->set( 2 => { Xyzzy => 2 } );

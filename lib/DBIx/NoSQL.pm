@@ -40,16 +40,44 @@ sub _build_type_map {
 
 sub model {
     my $self = shift;
-    my $name = shift or die "Missing model name";
+    die "Missing model name" unless @_;
+    if ( @_ > 1 ) {
+        $self->model( $_ ) for @_;
+    }
+    else {
+        my $name = shift or die "Missing model name";
 
-    return $self->_model->{ $name } ||= DBIx::NoSQL::Model->new( store => $self, name => $name );
+        return $self->_model->{ $name } ||= DBIx::NoSQL::Model->new( store => $self, name => $name );
+    }
 }
 
-sub prepare {
+sub validate {
     my $self = shift;
-    for my $name ( @_ ) {
-        my $model = $self->model( $name );
-        $model->prepare;
+    my %options = @_;
+
+    exists $options{ $_ } or $options{ $_ } = 1 for qw/ fatal /;
+
+    my $valid = 1;
+    for my $model ( values %{ $self->_model } ) {
+        next unless my $indexer = $model->index;
+        next unless $indexer->exists;
+        $valid = $indexer->same;
+        if ( ! $valid && $options{ fatal } ) {
+            my $name = $model->name;
+            die "Model \"$model\" has invalid indexer (indexer schema mismatch)";
+        }
+    }
+}
+
+sub migrate {
+    my $self = shift;
+
+    for my $model ( values %{ $self->_model } ) {
+        next unless my $indexer = $model->index;
+        $indexer->reset;
+        next unless $indexer->exists;
+        next if $indexer->same;
+        $indexer->migrate;
     }
 }
 
