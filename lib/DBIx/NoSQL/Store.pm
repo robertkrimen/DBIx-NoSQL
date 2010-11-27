@@ -16,6 +16,7 @@ use DBIx::NoSQL::Model;
 
 has database => qw/ is ro /;
 has connection => qw/ is ro /;
+has strict => qw/ is rw isa Bool default 0 /;
 
 has storage => qw/ is ro lazy_build 1 /;
 sub _build_storage {
@@ -45,6 +46,13 @@ sub model {
 
         return $self->_model->{ $name } ||= DBIx::NoSQL::Model->new( store => $self, name => $name );
     }
+}
+
+sub model_exists {
+    my $self = shift;
+    my $name = shift;
+    die "Missing model name" unless defined $name;
+    return $self->_model->{ $name } ? 1 : 0;
 }
 
 sub validate {
@@ -77,12 +85,25 @@ sub migrate {
     }
 }
 
-sub search {
+sub _model_do {
     my $self = shift;
     my $name = shift or die "Missing model name";
+    my $operation = shift or die "Missing model operation";
 
-    my $model = $self->_model->{ $name } or die "No such model ($name)";
-    return $model->search( @_ );
+    my $model = $self->model( $name );
+    return $model->$operation( @_ );
+}
+
+sub search {
+    return shift->_model_do( shift, 'search', @_ );
+}
+
+sub set {
+    return shift->_model_do( shift, 'set', @_ );
+}
+
+sub get {
+    return shift->_model_do( shift, 'get', @_ );
 }
 
 has stash => qw/ is ro lazy_build 1 /;

@@ -5,7 +5,7 @@ use Test::Most;
 
 use t::Test;
 
-my ( $store, $store_file, $model );
+my ( $store, $store_file, $model, $result );
 $store_file = t::Test->test_sqlite( remove => 1 );;
 $store = DBIx::NoSQL->new();
 
@@ -17,6 +17,14 @@ $model->field( date => ( index => 1, isa => 'DateTime' ) );
 
 $store->connect( $store_file );
 
-$store->model( 'Artist' )->set( 1 => { Xyzzy => 1 } );
+$store->set( 'Artist', 1 => { Xyzzy => 1 } );
+is( $store->search( 'Artist' )->count, 1 );
+
+$store->set( 'Artist', 2 => { Xyzzy => 2, rank2 => 3 } );
+is( $store->search( 'Artist' )->count, 2 );
+is( $store->search( 'Artist', { key => 1 } )->count, 1 );
+
+$result = $store->get( 'Artist', 2 );
+cmp_deeply( $result, { Xyzzy => 2, rank2 => 3 } );
 
 done_testing;
