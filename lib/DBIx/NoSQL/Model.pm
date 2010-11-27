@@ -9,7 +9,7 @@ use Digest::SHA qw/ sha1_hex /;
 has store => qw/ is ro required 1 weak_ref 1 /, handles => [qw/ storage /];
 has name => qw/ reader name writer _name required 1 /;
 
-has indexable => qw/ is rw isa Bool default 1 /;
+has index => qw/ accessor _index isa Bool default 1 /;
 
 has inflate => qw/ accessor _inflate isa Maybe[CodeRef] /;
 has deflate => qw/ accessor _deflate isa Maybe[CodeRef] /;
@@ -99,9 +99,9 @@ sub set {
         { key => 'primary' },
     );
 
-    return unless $self->indexable;
-
-    $self->index->update( $key => $data );
+    if ( my $indexer = $self->indexer ) {
+        $indexer->update( $key => $data );
+    }
 }
 
 sub exists {
@@ -215,28 +215,36 @@ sub serialize {
     return $value;
 }
 
-has index => qw/ is ro lazy_build 1 /;
-sub _build_index {
+has indexer => qw/ is ro lazy_build 1 /;
+sub _build_indexer {
     require DBIx::NoSQL::Model::Index;
     my $self = shift;
+    return unless $self->_index;
     return DBIx::NoSQL::Model::Index->new( model => $self );
+}
+
+sub index {
+    my $self = shift;
+    return $self->indexer unless @_;
+
+    $self->_index( shift );
+    $self->clear_indexer;
 }
 
 sub prepare {
     my $self = shift;
 
-    return unless $self->indexable;
+    return unless my $indexer = $self->indexer;
 
-    $self->index->prepare;
+    $indexer->prepare;
 }
-
 
 sub search {
     my $self = shift;
 
-    die "Trying to search on an unindexed model" unless $self->indexable;
+    die "Trying to search on an unindexed model" unless my $indexer = $self->indexer;
 
-    return $self->index->search( @_ );
+    return $indexer->search( @_ );
 }
 
 1;
