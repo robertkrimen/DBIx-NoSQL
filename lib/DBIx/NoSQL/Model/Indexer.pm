@@ -5,13 +5,27 @@ use Modern::Perl;
 use Any::Moose;
 use Clone qw/ clone /;
 use Digest::SHA qw/ sha1_hex /;
+use DBIx::NoSQL::Search;
 
 has model => qw/ is ro required 1 weak_ref 1 /, handles => [qw/ store storage /];
+
+has prepared => qw/ is rw isa Bool default 0 /;
+
+has key_column => qw/ is rw isa Str lazy_build 1 /;
+sub _build_key_column { 'key' }
+
+has [qw/ create_statement drop_statement schema_digest /] => qw/ is rw isa Maybe[Str] /;
+
+has result_class_scaffold => qw/ is ro lazy_build 1 /;
+sub _build_result_class_scaffold { return DBIx::NoSQL::ClassScaffold->new->become_ResultClass }
+has result_class => qw/ is ro lazy_build 1 /;
+sub _build_result_class { return shift->result_class_scaffold->package }
 
 sub search {
     my $self = shift;
 
-    require DBIx::NoSQL::Search;
+    $self->prepare;
+
     my $search = DBIx::NoSQL::Search->new( model => $self->model );
 
     if ( @_ ) {
@@ -25,6 +39,8 @@ sub update {
     my $self = shift;
     my $key = shift;
     my $target = shift;
+
+    $self->prepare;
 
     my $model = $self->model;
 
@@ -44,13 +60,10 @@ sub update {
     );
 }
 
-has key_column => qw/ is rw isa Str lazy_build 1 /;
-sub _build_key_column { 'key' }
-
-has [qw/ create_statement drop_statement schema_digest /] => qw/ is rw isa Maybe[Str] /;
-
 sub prepare {
     my $self = shift;
+
+    return if $self->prepared;
 
     $self->register_result_class;
 
@@ -58,14 +71,12 @@ sub prepare {
         $self->deploy;
     }
     elsif ( ! $self->same ) {
-        $self->redeploy;
+        my $model = $self->model->name;
+        die "Unable to prepare index for model ($model) because index already exists (and is different)";
     }
-}
 
-has result_class_scaffold => qw/ is ro lazy_build 1 /;
-sub _build_result_class_scaffold { return DBIx::NoSQL::ClassScaffold->new->become_ResultClass }
-has result_class => qw/ is ro lazy_build 1 /;
-sub _build_result_class { return shift->result_class_scaffold->package }
+    $self->prepared( 1 );
+}
 
 sub register_result_class {
     my $self = shift;
@@ -150,6 +161,11 @@ sub deploy {
         }
     }
 
+    $self->_deploy;
+}
+
+sub _deploy {
+    my $self = shift;
     $self->store->storage->do( $self->create_statement );
     $self->stash_schema_digest( $self->schema_digest );
 }
@@ -162,9 +178,11 @@ sub undeploy {
 sub redeploy {
     my $self = shift;
 
+    $self->register_result_class;
     $self->undeploy;
-    $self->deploy;
+    $self->_deploy;
     $self->reindex;
+    $self->prepared( 1 );
 }
 
 sub reindex {
