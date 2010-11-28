@@ -131,7 +131,7 @@ sub register_result_class {
 sub stash_schema_digest {
     my $self = shift;
     my $model = $self->model->name;
-    return $self->store->stash->value( "mode.$model.index.schema_digest", @_ );
+    return $self->store->stash->value( "model.$model.index.schema_digest", @_ );
 }
 
 sub exists {
