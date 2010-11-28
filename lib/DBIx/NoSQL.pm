@@ -63,9 +63,9 @@ __END__
 
 =head1 DESCRIPTION
 
-DBIx::NoSQL is a layer over DBI that presents a NoSQLish way to store and retrieve data. You do not need to prepare a schema beforehand to start putting data into your store
+DBIx::NoSQL is a layer over DBI that presents a NoSQLish way to store and retrieve data. You do not need to prepare a schema beforehand to start putting data in!
 
-Currently, it works by using JSON for serialization and SQLite as the database (though additional database support should not difficult to implement)
+Currently, data setting/getting works by using JSON for serialization and SQLite as the database (though additional database support should not be difficult to implement)
 
 The API is fairly sane, though still an early "alpha." At the moment, a better name for this package might be "DBIx::NoSQLite"
 
@@ -97,7 +97,9 @@ If C<$model> has index, this command will also delete the index entry correspond
 
 =head2 ...
 
-For additional usage, see SYNOPSIS or look at the code. More documentation forthcoming
+For additional usage, see SYNOPSIS or look at the code
+
+More documentation forthcoming
 
 =head1 SEE ALSO
 
