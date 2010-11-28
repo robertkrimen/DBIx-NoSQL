@@ -5,11 +5,9 @@ use Test::Most;
 
 use t::Test;
 
-ok( 1 );
-
 my ( $store, $store_file, $model );
 $store_file = t::Test->tmp_sqlite;
-$store_file = t::Test->test_sqlite( remove => 1 );
+#$store_file = t::Test->test_sqlite( remove => 1 );
 
 $store = DBIx::NoSQL->new();
 
