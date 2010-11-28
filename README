@@ -34,6 +34,17 @@ SYNOPSIS
             ...
         }
 
+        $store->model( 'Album' )->field( 'released' => ( index => 1, isa => 'DateTime' ) );
+
+        $store->set( 'Album' => 'Siamese Dream' => {
+            artist => 'Smashing Pumpkins',
+            released => DateTime->new( ... ),
+        } );
+
+        my $album = $store->get( 'Album' => 'Siamese Dream' );
+        my $released = $album->{ released }; # The field is automatically inflated
+        print $release->strftime( ... );
+
 DESCRIPTION
     DBIx::NoSQL is a layer over DBI that presents a NoSQLish way to store
     and retrieve data. You do not need to prepare a schema beforehand to
@@ -47,6 +58,22 @@ DESCRIPTION
     better name for this package might be "DBIx::NoSQLite"
 
 USAGE
+  $store = DBIx::NoSQL->new
+    Returns a new DBIx::NoSQL store
+
+  $store->connect( $path )
+    Connect to (creating if necessary) the SQLite database located at $path
+
+  $store->set( $model, $key, $value )
+    Set $key (a string) to $value (a HASH reference) in $model
+
+  $value = $store->get( $model, $key )
+    Get $value matching $key in $model
+
+  ...
+    For additional usage, see SYNOPSIS or look at the code. More
+    documentation forthcoming
+
 SEE ALSO
     KiokuDB
 

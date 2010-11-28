@@ -71,6 +71,26 @@ The API is fairly sane, though still an early "alpha." At the moment, a better n
 
 =head1 USAGE
 
+=head2 $store = DBIx::NoSQL->new
+
+Returns a new DBIx::NoSQL store
+
+=head2 $store->connect( $path )
+
+Connect to (creating if necessary) the SQLite database located at C<$path>
+
+=head2 $store->set( $model, $key, $value )
+
+Set C<$key> (a string) to C<$value> (a HASH reference) in C<$model>
+
+=head2 $value = $store->get( $model, $key )
+
+Get C<$value> matching C<$key> in C<$model>
+
+=head2 ...
+
+For additional usage, see SYNOPSIS or look at the code. More documentation forthcoming
+
 =head1 SEE ALSO
 
 L<KiokuDB>
