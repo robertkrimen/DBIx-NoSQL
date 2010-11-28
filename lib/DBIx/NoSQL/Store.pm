@@ -63,7 +63,8 @@ sub validate {
 
     my $valid = 1;
     for my $model ( values %{ $self->_model } ) {
-        next unless my $index = $model->index;
+        next unless $model->searchable;
+        my $index = $model->index;
         next unless $index->exists;
         $valid = $index->same;
         if ( ! $valid && $options{ fatal } ) {
@@ -73,15 +74,16 @@ sub validate {
     }
 }
 
-sub migrate {
+sub reindex {
     my $self = shift;
 
     for my $model ( values %{ $self->_model } ) {
-        next unless my $index = $model->index;
+        next unless $model->searchable;
+        my $index = $model->index;
         $index->reset;
         next unless $index->exists;
         next if $index->same;
-        $index->migrate;
+        $index->reindex;
     }
 }
 

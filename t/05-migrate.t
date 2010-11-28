@@ -29,7 +29,7 @@ $store->model( 'Artist' )->set( 3 => { Xyzzy => 3 } );
 
 $model->field( rank => ( index => 1 ) );
 
-$store->migrate;
+$store->reindex;
 
 cmp_deeply( [ $store->search( 'Artist' )->order_by( 'rank' )->fetch ], [
     { Xyzzy => 3 },
