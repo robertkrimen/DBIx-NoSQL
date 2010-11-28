@@ -1,4 +1,4 @@
-package DBIx::NoSQL::Model::Indexer;
+package DBIx::NoSQL::Model::Index;
 
 use strict;
 use warnings;
@@ -157,7 +157,7 @@ sub deploy {
         }
         else {
             my $model = $self->model->name;
-            warn "Indexer schema mismatch for model ($model)";
+            warn "Index schema mismatch for model ($model)";
             return;
         }
     }

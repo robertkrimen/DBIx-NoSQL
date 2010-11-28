@@ -63,12 +63,12 @@ sub validate {
 
     my $valid = 1;
     for my $model ( values %{ $self->_model } ) {
-        next unless my $indexer = $model->index;
-        next unless $indexer->exists;
-        $valid = $indexer->same;
+        next unless my $index = $model->index;
+        next unless $index->exists;
+        $valid = $index->same;
         if ( ! $valid && $options{ fatal } ) {
             my $name = $model->name;
-            die "Model \"$model\" has invalid indexer (indexer schema mismatch)";
+            die "Model \"$model\" has invalid index (schema mismatch)";
         }
     }
 }
@@ -77,11 +77,11 @@ sub migrate {
     my $self = shift;
 
     for my $model ( values %{ $self->_model } ) {
-        next unless my $indexer = $model->index;
-        $indexer->reset;
-        next unless $indexer->exists;
-        next if $indexer->same;
-        $indexer->migrate;
+        next unless my $index = $model->index;
+        $index->reset;
+        next unless $index->exists;
+        next if $index->same;
+        $index->migrate;
     }
 }
 

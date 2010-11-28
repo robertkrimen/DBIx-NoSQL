@@ -230,17 +230,12 @@ sub serialize {
 
 has searchable => qw/ is rw isa Bool default 1 /;
 
-has indexer => qw/ is ro lazy_build 1 /;
-sub _build_indexer {
-    require DBIx::NoSQL::Model::Indexer;
+has index => qw/ is ro lazy_build 1 /;
+sub _build_index {
+    require DBIx::NoSQL::Model::Index;
     my $self = shift;
     return unless $self->searchable;
-    return DBIx::NoSQL::Model::Indexer->new( model => $self );
-}
-
-sub index {
-    my $self = shift;
-    return $self->indexer( @_ );
+    return DBIx::NoSQL::Model::Index->new( model => $self );
 }
 
 sub reindex {
@@ -248,9 +243,12 @@ sub reindex {
 
     return unless $self->searchable;
 
+    if ( ! $self->index ) {
+        $self->clear_index;
+    }
+
     return $self->index->reindex;
 }
-
 
 sub search {
     my $self = shift;
