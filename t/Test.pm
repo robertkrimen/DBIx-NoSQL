@@ -12,7 +12,7 @@ use JSON; our $json = JSON->new->pretty;
 use Scalar::Util qw/ blessed /;
 
 sub tmp_sqlite {
-    return file File::Temp->new->filename;
+    return file( File::Temp->new->filename );
 }
 
 sub test_sqlite {
@@ -26,6 +26,10 @@ sub test_sqlite {
 sub log {
     my $self = shift;
     warn ( join ' ', map { blessed $_ || ! ref $_ ? $_ : $json->encode( $_ ) } @_ ) . "\n";
+}
+
+sub now {
+    return DateTime->now;
 }
 
 1;

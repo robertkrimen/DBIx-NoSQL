@@ -4,20 +4,18 @@ use warnings;
 use Test::Most;
 
 use t::Test;
-use File::Temp qw/ tempfile /;
-use DBIx::NoSQL;
-use Path::Class;
-use DateTime;
 
 ok( 1 );
 
 my ( $store, $store_file, $model );
-$store_file = File::Temp->new->filename;
-$store_file = file 'test.sqlite';
-$store_file->remove;
-$store = DBIx::NoSQL->new( database => $store_file );
+$store_file = t::Test->tmp_sqlite;
+$store_file = t::Test->test_sqlite( remove => 1 );
+
+$store = DBIx::NoSQL->new();
 
 ok( $store );
+
+$store->connect( $store_file );
 
 throws_ok { $store->storage->do( 'Xyzzy' ) } qr/syntax error \[for Statement "Xyzzy"\]/;
 
@@ -35,7 +33,6 @@ is( $store->search( 'Artist', { key => { -in => [qw/ 1 3 /] } } )->count, 2 );
 cmp_deeply( [ $store->search( 'Artist', { key => 1 } )->fetch ], [
     { Xyzzy => 1 },
 ] );
-#cmp_deeply( [ $store->search( 'Artist', { key => { -in => [qw/ 1 3 /] } } )->order_by(
 
 cmp_deeply( $store->model( 'Artist' )->get( 1 ), { Xyzzy => 1 } );
 

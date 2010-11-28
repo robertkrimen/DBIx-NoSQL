@@ -111,7 +111,6 @@ sub _build_stash {
     require DBIx::NoSQL::Stash;
     my $self = shift;
     my $stash = DBIx::NoSQL::Stash->new( store => $self );
-    $stash->model->prepare;
     return $stash;
 }
 

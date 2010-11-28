@@ -34,7 +34,7 @@ cmp_deeply( $artist, {
 } );
 
 $store->model( 'Artist' )->field( 'name' => ( index => 1 ) );
-$store->model( 'Artist' )->index->migrate;
+$store->model( 'Artist' )->reindex;
 
 cmp_deeply( [ $store->search( 'Artist' )->order_by( 'name DESC' )->all ], [
     {

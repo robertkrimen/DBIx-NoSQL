@@ -185,22 +185,11 @@ sub redeploy {
     $self->register_result_class if $options{ register };
     $self->undeploy;
     $self->_deploy;
-    $self->reindex;
+    $self->reload;
     $self->prepared( 1 );
 }
 
-sub reset {
-    my $self = shift;
-    $self->register_result_class;
-}
-
-sub migrate {
-    my $self = shift;
-
-    return $self->redeploy( @_ );
-}
-
-sub reindex {
+sub reload {
     my $self = shift;
 
     my @result = $self->model->_store_set->search( { __model__ => $self->model->name } )->all;
@@ -208,5 +197,13 @@ sub reindex {
         $self->update( $result->get_column( '__key__' ), $result->get_column( '__value__' ) );
     }
 }
+
+sub reset {
+    my $self = shift;
+    $self->register_result_class;
+}
+
+sub reindex { return shift->redeploy( @_ ) }
+sub migrate { return shift->redeploy( @_ ) }
 
 1;

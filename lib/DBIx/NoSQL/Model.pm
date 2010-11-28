@@ -10,8 +10,6 @@ use Digest::SHA qw/ sha1_hex /;
 has store => qw/ is ro required 1 weak_ref 1 /, handles => [qw/ storage /];
 has name => qw/ reader name writer _name required 1 /;
 
-has index => qw/ accessor _index isa Bool default 1 /;
-
 has inflate => qw/ accessor _inflate isa Maybe[CodeRef] /;
 has deflate => qw/ accessor _deflate isa Maybe[CodeRef] /;
 sub inflator { return shift->_inflate( @_ ) }
@@ -114,8 +112,8 @@ sub set {
         { key => 'primary' },
     );
 
-    if ( my $indexer = $self->indexer ) {
-        $indexer->update( $key => $data );
+    if ( $self->searchable ) {
+        $self->index->update( $key => $data );
     }
 }
 
@@ -230,36 +228,36 @@ sub serialize {
     return $value;
 }
 
+has searchable => qw/ is rw isa Bool default 1 /;
+
 has indexer => qw/ is ro lazy_build 1 /;
 sub _build_indexer {
     require DBIx::NoSQL::Model::Indexer;
     my $self = shift;
-    return unless $self->_index;
+    return unless $self->searchable;
     return DBIx::NoSQL::Model::Indexer->new( model => $self );
 }
 
 sub index {
     my $self = shift;
-    return $self->indexer unless @_;
-
-    $self->_index( shift );
-    $self->clear_indexer;
+    return $self->indexer( @_ );
 }
 
-sub prepare {
+sub reindex {
     my $self = shift;
 
-    return unless my $indexer = $self->indexer;
+    return unless $self->searchable;
 
-    $indexer->prepare;
+    return $self->index->reindex;
 }
+
 
 sub search {
     my $self = shift;
 
-    die "Trying to search on an unindexed model" unless my $indexer = $self->indexer;
+    die "Trying to search on an unsearchable (unindexed) model" unless $self->searchable;
 
-    return $indexer->search( @_ );
+    return $self->index->search( @_ );
 }
 
 1;

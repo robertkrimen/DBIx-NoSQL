@@ -12,7 +12,7 @@ has model => qw/ is ro lazy_build 1 /;
 sub _build_model {
     my $self = shift;
     my $model = $self->store->model( '__Store_Stash__' );
-    $model->index( 0 );
+    $model->searchable( 0 );
     return $model;
 }
 
