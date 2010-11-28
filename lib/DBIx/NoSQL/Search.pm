@@ -145,14 +145,31 @@ sub next {
     else                        { die "Invalid inflation target ($as)" }
 }
 
-sub fetch {
+sub offset {
     my $self = shift;
-    return $self->all( as => 'data', @_ );
+    my $offset = shift;
+
+    return $self->clone( _offset => $offset );
 }
 
-sub get {
+sub limit {
     my $self = shift;
-    return $self->all( @_ );
+    my $limit = shift;
+
+    return $self->clone( _limit => $limit );
+}
+
+sub slice {
+    my $self = shift;
+    my $from = shift;
+    my $to = shift;
+
+    my $offset = $self->_offset || 0;
+
+    $offset += $from;
+    my $limit = $to ? ( $to - $from + 1 ) : 1;
+
+    return $self->clone( _offset => $offset, _limit => $limit );
 }
 
 sub count {
@@ -161,6 +178,16 @@ sub count {
     my $cursor = $self->_cursor( 'count' );
     return unless my $result = $cursor->next;
     return $result->[0];
+}
+
+sub fetch {
+    my $self = shift;
+    return $self->all( as => 'data', @_ );
+}
+
+sub get {
+    my $self = shift;
+    return $self->all( @_ );
 }
 
 1;

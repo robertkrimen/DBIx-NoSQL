@@ -33,9 +33,23 @@ __END__
         website => 'smashingpumpkins.com',
     } );
 
-    $store->search( 'Artist' )->count; # 1
+    $store->set( 'Artist' => 'Tool' => {
+        name => 'Tool',
+        genre => 'rock',
+    } );
+
+    $store->search( 'Artist' )->count; # 2
 
     my $artist = $store->get( 'Artist' => 'Smashing Pumpkins' );
+
+    # Set up a (searchable) index on the name field
+    $store->model( 'Artist' )->field( 'name' => ( index => 1 ) );
+    $store->model( 'Artist' )->index->migrate;
+
+    for $artist ( $store->search( 'Artist' )->order_by( 'name DESC' )->all ) {
+        ...
+    }
+
 
 =head1 DESCRIPTION
 
