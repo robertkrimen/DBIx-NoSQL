@@ -83,9 +83,17 @@ Connect to (creating if necessary) the SQLite database located at C<$path>
 
 Set C<$key> (a string) to C<$value> (a HASH reference) in C<$model>
 
+If C<$model> has index, this command will also update the index entry corresponding to C<$key>
+
 =head2 $value = $store->get( $model, $key )
 
 Get C<$value> matching C<$key> in C<$model>
+
+=head2 $value = $store->delete( $model, $key )
+
+Delete the entry matching C<$key> in C<$model>
+
+If C<$model> has index, this command will also delete the index entry corresponding to C<$key>
 
 =head2 ...
 

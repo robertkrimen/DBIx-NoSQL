@@ -48,4 +48,8 @@ is( ( $store->search( 'Artist' )->order_by( 'key DESC' )->prepare )[0],
 is( ( $store->search( 'Artist' )->order_by([ 'key DESC', 'name' ])->prepare )[0],
     "SELECT __Store__.__value__ FROM Artist me JOIN __Store__ __Store__ ON ( __Store__.__key__ = me.key AND __Store__.__model__ = 'Artist' ) ORDER BY key DESC, name" );
 
+$store->delete( 'Artist' => 3 );
+is( $store->get( 'Artist' => 3 ), undef );
+is( $store->search( 'Artist', { key => { -in => [qw/ 1 3 /] } } )->count, 1 );
+
 done_testing;

@@ -108,6 +108,11 @@ sub get {
     return shift->_model_do( shift, 'get', @_ );
 }
 
+sub delete {
+    return shift->_model_do( shift, 'delete', @_ );
+}
+
+
 has stash => qw/ is ro lazy_build 1 /;
 sub _build_stash {
     require DBIx::NoSQL::Stash;

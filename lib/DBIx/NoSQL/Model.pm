@@ -144,12 +144,8 @@ sub delete {
         $result->delete;
     }
 
-    $result = $self->_search_set( 
-        { $self->key_column => $key },
-        { key => 'primary' }
-    );
-    if ( $result ) {
-        $result->delete;
+    if ( $self->searchable ) {
+        $self->index->delete( $key );
     }
 }
 

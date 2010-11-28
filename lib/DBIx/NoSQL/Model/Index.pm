@@ -61,6 +61,21 @@ sub update {
     );
 }
 
+sub delete {
+    my $self = shift;
+    my $key = shift;
+
+    $self->prepare;
+
+    my $result = $self->store->schema->resultset( $self->model->name )->find(
+        { $self->key_column => $key },
+        { key => 'primary' }
+    );
+    if ( $result ) {
+        $result->delete;
+    }
+}
+
 sub prepare {
     my $self = shift;
 

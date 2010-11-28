@@ -67,8 +67,17 @@ USAGE
   $store->set( $model, $key, $value )
     Set $key (a string) to $value (a HASH reference) in $model
 
+    If $model has index, this command will also update the index entry
+    corresponding to $key
+
   $value = $store->get( $model, $key )
     Get $value matching $key in $model
+
+  $value = $store->delete( $model, $key )
+    Delete the entry matching $key in $model
+
+    If $model has index, this command will also delete the index entry
+    corresponding to $key
 
   ...
     For additional usage, see SYNOPSIS or look at the code. More
