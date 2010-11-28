@@ -48,4 +48,18 @@ cmp_deeply( [ $store->search( 'Artist' )->order_by( 'name DESC' )->all ], [
     },
 ] );
 
+$store->model( 'Album' )->field( 'released' => ( index => 1, isa => 'DateTime' ) );
+
+$store->set( 'Album' => 'Siamese Dream' => {
+    artist => 'Smashing Pumpkins',
+    released => DateTime->new( year => 1993, month => 1, day => 1, hour => 0, minute => 0, second => 0 ),
+} );
+
+my $album = $store->get( 'Album' => 'Siamese Dream' );
+my $released = $album->{ released };
+
+ok( blessed $released );
+is( $released->year, 1993 );
+is( $released->day, 1 );
+
 done_testing;

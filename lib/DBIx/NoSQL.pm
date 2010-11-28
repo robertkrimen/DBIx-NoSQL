@@ -50,6 +50,17 @@ __END__
         ...
     }
 
+    $store->model( 'Album' )->field( 'released' => ( index => 1, isa => 'DateTime' ) );
+
+    $store->set( 'Album' => 'Siamese Dream' => {
+        artist => 'Smashing Pumpkins',
+        released => DateTime->new( ... ),
+    } );
+
+    my $album = $store->get( 'Album' => 'Siamese Dream' );
+    my $released = $album->{ released }; # The field is automatically inflated
+    print $release->strftime( ... );
+
 =head1 DESCRIPTION
 
 DBIx::NoSQL is a layer over DBI that presents a NoSQLish way to store and retrieve data. You do not need to prepare a schema beforehand to start putting data into your store
