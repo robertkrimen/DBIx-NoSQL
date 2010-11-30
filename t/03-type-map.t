@@ -2,9 +2,10 @@
 use strict;
 use warnings;
 use Test::Most;
+plan skip_all => "DateTime required for this test" unless eval { require DateTime };
 
 use DBIx::NoSQL::TypeMap;
-use DateTime;
+require DateTime;
 
 my ( $map, $type, $data, $value );
 

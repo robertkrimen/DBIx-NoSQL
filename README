@@ -2,7 +2,7 @@ NAME
     DBIx::NoSQL - Experimental NoSQL-ish overlay for an SQL database
 
 VERSION
-    version 0.0011
+    version 0.0012
 
 SYNOPSIS
         use DBIx::NoSQL;
