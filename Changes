@@ -1,4 +1,5 @@
-0.0012:
+0.0012 Tuesday November 30 21:14:05 PST 2010:
+    - Documentation for ->search
     - Check for DateTime before running test
     - Depend on SQL::Translator
 

@@ -25,6 +25,11 @@ sub _cursor {
     return $self->storage->cursor( $statement, \@bind );
 }
 
+sub search {
+    my $self = shift;
+    return $self->where( @_ );
+}
+
 sub where {
     my $self = shift;
     my $where = shift;

@@ -79,6 +79,56 @@ USAGE
     If $model has index, this command will also delete the index entry
     corresponding to $key
 
+Search USAGE
+  $search = $store->search( $model, [ $where ] )
+        $search = $store->search( 'Artist' => { name => { -like => 'Smashing%' } } )
+
+    Return a DBIx::NoSQL::Search object for $model, filtering on the
+    optional $where
+
+    An index is required for the filtering columns
+
+    Refer to SQL::Abstract for the format of $where (actually uses
+    DBIx::Class::SQLMaker under the hood)
+
+  @all = $search->all
+    Returns every result for $search in a list
+
+    Returns an empty list if nothing is found
+
+  $result = $search->next
+    Returns the next item found for $search via "$search->cursor"
+
+    Returns undef if nothing is left for $search
+
+  $sth = $search->cursor->sth
+    Returns the DBI sth (statement handle) for $search
+
+  $search = $search->search( $where )
+    Further refine the search in the same way "$search->where( ... )" does
+
+  $search = $search->where( $where )
+        $search = $search->where( { genre => 'rock' } )
+
+    Further refine $search with the given $where
+
+    A new object is cloned from the original, which is left untouched
+
+    An index is required for the filtering columns
+
+    Refer to SQL::Abstract for the format of $where (actually uses
+    DBIx::Class::SQLMaker under the hood)
+
+  $search = $search->order_by( $order_by )
+    Return the results in the given order
+
+    A new object is cloned from the original, which is left untouched
+
+    An index is required for the ordering columns
+
+    Refer to SQL::Abstract for the format of $order_by (actually uses
+    DBIx::Class::SQLMaker under the hood)
+
   ...
     For additional usage, see SYNOPSIS or look at the code
 

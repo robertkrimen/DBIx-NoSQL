@@ -95,6 +95,60 @@ Delete the entry matching C<$key> in C<$model>
 
 If C<$model> has index, this command will also delete the index entry corresponding to C<$key>
 
+=head1 Search USAGE
+
+=head2 $search = $store->search( $model, [ $where ] )
+
+    $search = $store->search( 'Artist' => { name => { -like => 'Smashing%' } } )
+
+Return a L<DBIx::NoSQL::Search> object for C<$model>, filtering on the optional C<$where>
+
+An index is required for the filtering columns
+
+Refer to L<SQL::Abstract> for the format of C<$where> (actually uses L<DBIx::Class::SQLMaker> under the hood)
+
+=head2 @all = $search->all
+
+Returns every result for C<$search> in a list
+
+Returns an empty list if nothing is found
+
+=head2 $result = $search->next
+
+Returns the next item found for C<$search> via C<< $search->cursor >>
+
+Returns undef if nothing is left for C<$search> 
+
+=head2 $sth = $search->cursor->sth
+
+Returns the L<DBI> sth (statement handle) for C<$search>
+
+=head2 $search = $search->search( $where )
+
+Further refine the search in the same way C<< $search->where( ... ) >> does
+
+=head2 $search = $search->where( $where )
+
+    $search = $search->where( { genre => 'rock' } ) 
+
+Further refine C<$search> with the given C<$where>
+
+A new object is cloned from the original, which is left untouched
+
+An index is required for the filtering columns
+
+Refer to L<SQL::Abstract> for the format of C<$where> (actually uses L<DBIx::Class::SQLMaker> under the hood)
+
+=head2 $search = $search->order_by( $order_by )
+
+Return the results in the given order
+
+A new object is cloned from the original, which is left untouched
+
+An index is required for the ordering columns
+
+Refer to L<SQL::Abstract> for the format of C<$order_by> (actually uses L<DBIx::Class::SQLMaker> under the hood)
+
 =head2 ...
 
 For additional usage, see SYNOPSIS or look at the code
