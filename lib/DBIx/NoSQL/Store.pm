@@ -112,6 +112,9 @@ sub delete {
     return shift->_model_do( shift, 'delete', @_ );
 }
 
+sub exists {
+    return shift->_model_do( shift, 'exists', @_ );
+}
 
 has stash => qw/ is ro lazy_build 1 /;
 sub _build_stash {
@@ -150,7 +153,7 @@ sub _build_schema {
         $connection = $database;
     }
 
-    my $schema = $self->connect( $connection );
+    my $schema = $self->_connect( $connection );
     return $schema;
 }
 
@@ -160,6 +163,17 @@ sub schema {
 }
 
 sub connect {
+    my $self = shift;
+    if ( ! blessed $self ) {
+        return $self->new->connect( @_ );
+    }
+
+    $self->clear_schema if $self->_has_schema;
+    my $schema = $self->_connect( @_ );
+    return $self;
+}
+
+sub _connect {
     my $self = shift;
     my $connection = shift;
 
@@ -173,8 +187,9 @@ sub connect {
     $connection = [ $connection ] unless ref $connection eq 'ARRAY';
     my $schema = $self->schema_class->connect( @$connection );
     $schema->store( $self );
-    $self->_schema( $schema );
 
+    # FIXME This kind of sucks, and potentially a little redundant, see _build_schema
+    $self->schema( $schema );
     if ( ! $self->storage->table_exists( '__Store__' ) ) {
         $schema->deploy;
     }

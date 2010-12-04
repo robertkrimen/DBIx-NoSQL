@@ -7,9 +7,15 @@ use warnings;
 use DBIx::NoSQL::Store;
 
 sub new {
-    my $class  = shift;
+    my $class = shift;
     return DBIx::NoSQL::Store->new( @_ );
 }
+
+sub connect {
+    my $class = shift;
+    return DBIx::NoSQL::Store->connect( @_ );
+}
+
 
 1;
 
@@ -19,15 +25,15 @@ __END__
 
     use DBIx::NoSQL;
 
-    my $store = DBIx::NoSQL->new;
-
-    $store->connect( 'store.sqlite' );
+    my $store = DBIx::NoSQL->connect( 'store.sqlite' );
 
     $store->set( 'Artist' => 'Smashing Pumpkins' => {
         name => 'Smashing Pumpkins',
         genre => 'rock',
         website => 'smashingpumpkins.com',
     } );
+
+    $store->exists( 'Artist' => 'Smashing Pumpkins' ); # 1
 
     $store->set( 'Artist' => 'Tool' => {
         name => 'Tool',
@@ -39,14 +45,14 @@ __END__
     my $artist = $store->get( 'Artist' => 'Smashing Pumpkins' );
 
     # Set up a (searchable) index on the name field
-    $store->model( 'Artist' )->field( 'name' => ( index => 1 ) );
+    $store->model( 'Artist' )->index( 'name' );
     $store->model( 'Artist' )->reindex;
 
     for $artist ( $store->search( 'Artist' )->order_by( 'name DESC' )->all ) {
         ...
     }
 
-    $store->model( 'Album' )->field( 'released' => ( index => 1, isa => 'DateTime' ) );
+    $store->model( 'Album' )->index( 'released' => ( isa => 'DateTime' ) );
 
     $store->set( 'Album' => 'Siamese Dream' => {
         artist => 'Smashing Pumpkins',
@@ -67,19 +73,19 @@ The API is fairly sane, though still an early "alpha." At the moment, a better n
 
 =head1 USAGE
 
-=head2 $store = DBIx::NoSQL->new
+=head2 $store = DBIx::NoSQL->connect( $path )
 
-Returns a new DBIx::NoSQL store
-
-=head2 $store->connect( $path )
-
-Connect to (creating if necessary) the SQLite database located at C<$path>
+Returns a new DBIx::NoSQL store connected to (creating if necessary) the SQLite database located at C<$path>
 
 =head2 $store->set( $model, $key, $value )
 
 Set C<$key> (a string) to C<$value> (a HASH reference) in C<$model>
 
 If C<$model> has index, this command will also update the index entry corresponding to C<$key>
+
+=head2 $value = $store->exists( $model, $key )
+
+Returns true if some data for C<$key> is present in C<$model>
 
 =head2 $value = $store->get( $model, $key )
 
@@ -91,7 +97,21 @@ Delete the entry matching C<$key> in C<$model>
 
 If C<$model> has index, this command will also delete the index entry corresponding to C<$key>
 
+=head2 $store->reindex
+
+Reindex the searchable/orderable data in C<$store>
+
+Refer to "Model USAGE" below for more information
+
+=head2 $store->dbh
+
+Return the L<DBI> database handle for the store, if you need/want to do your own thing
+
 =head1 Search USAGE
+
+To search on a model, you must first set up an index on the field you want to search on
+
+Refer to "Model USAGE" for more information
 
 =head2 $search = $store->search( $model, [ $where ] )
 
@@ -129,7 +149,7 @@ Further refine the search in the same way C<< $search->where( ... ) >> does
 
 Further refine C<$search> with the given C<$where>
 
-A new object is cloned from the original, which is left untouched
+A new object is cloned from the original (the original which is left untouched)
 
 An index is required for the filtering columns
 
@@ -148,6 +168,44 @@ A new object is cloned from the original, which is left untouched
 An index is required for the ordering columns
 
 Refer to L<SQL::Abstract> for the format of C<$order_by> (actually uses L<DBIx::Class::SQLMaker> under the hood)
+
+=head1 Model USAGE
+
+=head2 $model = $store->model( $model_name )
+
+    $store->model( 'Artist' )->index( 'name' ) # 'name' is now searchable/orderable, etc.
+
+Retrieve or create the C<$model_name> model object
+
+=head2 $model->index( $field_name )
+
+    $store->model( 'Artist' )->index( 'website', isa => 'URI' )
+    $store->model( 'Artist' )->index( 'founded', isa => 'DateTime' )
+
+Index C<$field_name> on C<$model>
+
+Every time the store for c<$model> is written to, the index will be updated with the value of C<$field>
+
+=head2 $model->index( $field_name, isa => $type )
+
+Index C<$field_name> on C<$model> as a special type/object (e.g. L<DateTime> or L<URI>)
+
+Every time the store for c<$model> is written to, the index will be updated with the deflated value of C<$field> (since
+L<JSON> can not trivially serialize blessed references)
+
+=head2 $model->reindex
+
+Reindex the C<$model> data in the store after making a field indexing change:
+
+    1. Rebuild the DBIx::Class::ResultSource
+    2. Drop and recreate the search table for $model
+    3. Iterate through all the data for $model, repopulating the search table
+
+If C<$model> does not have an index, this method will simply return
+
+To rebuild the index for _every_ model, you can do:
+
+    $store->reindex
 
 =head1 ...
 

@@ -226,12 +226,19 @@ sub serialize {
 
 has searchable => qw/ is rw isa Bool default 1 /;
 
-has index => qw/ is ro lazy_build 1 /;
+has index => qw/ reader _index lazy_build 1 /;
 sub _build_index {
     require DBIx::NoSQL::Model::Index;
     my $self = shift;
     return unless $self->searchable;
     return DBIx::NoSQL::Model::Index->new( model => $self );
+}
+
+sub index {
+    my $self = shift;
+    return $self->_index unless @_;
+    my $field_name = shift;
+    return $self->field( $field_name => ( index => 1, @_ ) );
 }
 
 sub reindex {

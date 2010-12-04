@@ -8,16 +8,18 @@ my ( $store, $store_file, $model, $result );
 $store_file = t::Test->tmp_sqlite;
 #$store_file = t::Test->test_sqlite( remove => 1 );
 
-$store = DBIx::NoSQL->new();
+$store = DBIx::NoSQL->connect( $store_file );
 ok( $store );
 
-$store->connect( $store_file );
+ok( ! $store->exists( 'Artist' => 'Smashing Pumpkins' ) );
 
 $store->set( 'Artist' => 'Smashing Pumpkins' => {
     name => 'Smashing Pumpkins',
     genre => 'rock',
     website => 'smashingpumpkins.com',
 } );
+
+ok( $store->exists( 'Artist' => 'Smashing Pumpkins' ) );
 
 $store->set( 'Artist' => 'Tool' => {
     name => 'Tool',
@@ -33,7 +35,7 @@ cmp_deeply( $artist, {
     website => 'smashingpumpkins.com',
 } );
 
-$store->model( 'Artist' )->field( 'name' => ( index => 1 ) );
+$store->model( 'Artist' )->index( 'name' );
 $store->model( 'Artist' )->reindex;
 
 cmp_deeply( [ $store->search( 'Artist' )->order_by( 'name DESC' )->all ], [
@@ -51,7 +53,7 @@ cmp_deeply( [ $store->search( 'Artist' )->order_by( 'name DESC' )->all ], [
 SKIP: {
     skip "DateTime required for this test", 1 unless eval { require DateTime };
     
-    $store->model( 'Album' )->field( 'released' => ( index => 1, isa => 'DateTime' ) );
+    $store->model( 'Album' )->index( 'released' => ( isa => 'DateTime' ) );
 
     $store->set( 'Album' => 'Siamese Dream' => {
         artist => 'Smashing Pumpkins',

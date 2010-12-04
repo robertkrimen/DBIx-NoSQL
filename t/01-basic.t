@@ -9,10 +9,10 @@ $store_file = t::Test->tmp_sqlite;
 #$store_file = t::Test->test_sqlite( remove => 1 );
 
 $store = DBIx::NoSQL->new();
-
 ok( $store );
 
 $store->connect( $store_file );
+ok( $store->dbh );
 
 throws_ok { $store->storage->do( 'Xyzzy' ) } qr/syntax error \[for Statement "Xyzzy"\]/;
 
@@ -23,6 +23,12 @@ $model->field( date => ( index => 1 ) );
 $store->model( 'Artist' )->set( 1 => { Xyzzy => 1 } );
 $store->model( 'Artist' )->set( 2 => { Xyzzy => 2 } );
 $store->model( 'Artist' )->set( 3 => { Xyzzy => 3 } );
+
+ok( $store->exists( 'Artist' => 1 ) );
+ok( $store->exists( 'Artist' => 2 ) );
+ok( $store->exists( 'Artist' => 3 ) );
+ok( ! $store->exists( 'Artist' => 4 ) );
+ok( ! $store->exists( 'Artist' => 42 ) );
 
 is( $store->search( 'Artist', { key => 1 } )->count, 1 );
 is( $store->search( 'Artist' )->count, 3 );

@@ -5,7 +5,6 @@ use Test::Most;
 plan skip_all => "DateTime required for this test" unless eval { require DateTime };
 
 use DBIx::NoSQL::TypeMap;
-require DateTime;
 
 my ( $map, $type, $data, $value );
 
