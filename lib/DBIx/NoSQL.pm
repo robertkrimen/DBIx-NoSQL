@@ -13,10 +13,6 @@ sub new {
 
 1;
 
-    #for $artist ( $store->search( 'Artist' )->order_by( 'genre' ) ) {
-    #    ...
-    #}
-
 __END__
 
 =head1 SYNOPSIS
@@ -141,6 +137,10 @@ Refer to L<SQL::Abstract> for the format of C<$where> (actually uses L<DBIx::Cla
 
 =head2 $search = $search->order_by( $order_by )
 
+    $search->order_by( 'name DESC' )
+
+    $search->order_by([ 'name DESC', 'age' ])
+
 Return the results in the given order
 
 A new object is cloned from the original, which is left untouched
@@ -149,7 +149,7 @@ An index is required for the ordering columns
 
 Refer to L<SQL::Abstract> for the format of C<$order_by> (actually uses L<DBIx::Class::SQLMaker> under the hood)
 
-=head2 ...
+=head1 ...
 
 For additional usage, see SYNOPSIS or look at the code
 

@@ -1,3 +1,6 @@
+0.0013 Saturday December 04 00:36:16 PST 2010:
+    - Documentation and test cleanup
+
 0.0012 Tuesday November 30 21:14:05 PST 2010:
     - Documentation for ->search
     - Check for DateTime before running test

@@ -2,7 +2,7 @@ NAME
     DBIx::NoSQL - Experimental NoSQL-ish overlay for an SQL database
 
 VERSION
-    version 0.0012
+    version 0.0013
 
 SYNOPSIS
         use DBIx::NoSQL;
@@ -120,6 +120,10 @@ Search USAGE
     DBIx::Class::SQLMaker under the hood)
 
   $search = $search->order_by( $order_by )
+        $search->order_by( 'name DESC' )
+
+        $search->order_by([ 'name DESC', 'age' ])
+
     Return the results in the given order
 
     A new object is cloned from the original, which is left untouched
@@ -129,7 +133,7 @@ Search USAGE
     Refer to SQL::Abstract for the format of $order_by (actually uses
     DBIx::Class::SQLMaker under the hood)
 
-  ...
+...
     For additional usage, see SYNOPSIS or look at the code
 
     More documentation forthcoming

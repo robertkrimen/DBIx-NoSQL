@@ -2,7 +2,6 @@
 use strict;
 use warnings;
 use Test::Most;
-
 use t::Test;
 
 my ( $store, $store_file, $model );

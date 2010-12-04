@@ -1,0 +1,9 @@
+#!/usr/bin/env perl
+
+use SQL::Abstract;
+use Modern::Perl;
+
+my $sql = SQL::Abstract->new;
+my ( $statement ) = $sql->select( 't1', [qw/ f1 f2 /], { w1 => '?' }, [ 'f1 DESC', 'f2' ] );
+say $statement;
+

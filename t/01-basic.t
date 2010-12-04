@@ -2,7 +2,6 @@
 use strict;
 use warnings;
 use Test::Most;
-
 use t::Test;
 
 my ( $store, $store_file, $model );
@@ -19,7 +18,7 @@ throws_ok { $store->storage->do( 'Xyzzy' ) } qr/syntax error \[for Statement "Xy
 
 $model = $store->model( 'Album' );
 $model->field( name => ( index => 1 ) );
-$model->field( date => ( index => 1, isa => 'DateTime' ) );
+$model->field( date => ( index => 1 ) );
 
 $store->model( 'Artist' )->set( 1 => { Xyzzy => 1 } );
 $store->model( 'Artist' )->set( 2 => { Xyzzy => 2 } );
@@ -34,7 +33,7 @@ cmp_deeply( [ $store->search( 'Artist', { key => 1 } )->fetch ], [
 
 cmp_deeply( $store->model( 'Artist' )->get( 1 ), { Xyzzy => 1 } );
 
-$store->model( 'Album' )->set( 3 => { name => 'Xyzzy', date => DateTime->now } );
+$store->model( 'Album' )->set( 3 => { name => 'Xyzzy', date => '20010101' } );
 $store->model( 'Album' )->set( 4 => { name => 'Xyzz_' } );
 
 cmp_deeply( [ $store->search( 'Album', { name => 'Xyzzy' } )->fetch ], [

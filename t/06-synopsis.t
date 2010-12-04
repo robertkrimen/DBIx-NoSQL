@@ -2,7 +2,6 @@
 use strict;
 use warnings;
 use Test::Most;
-
 use t::Test;
 
 my ( $store, $store_file, $model, $result );
@@ -49,18 +48,22 @@ cmp_deeply( [ $store->search( 'Artist' )->order_by( 'name DESC' )->all ], [
     },
 ] );
 
-$store->model( 'Album' )->field( 'released' => ( index => 1, isa => 'DateTime' ) );
+SKIP: {
+    skip "DateTime required for this test", 1 unless eval { require DateTime };
+    
+    $store->model( 'Album' )->field( 'released' => ( index => 1, isa => 'DateTime' ) );
 
-$store->set( 'Album' => 'Siamese Dream' => {
-    artist => 'Smashing Pumpkins',
-    released => DateTime->new( year => 1993, month => 1, day => 1, hour => 0, minute => 0, second => 0 ),
-} );
+    $store->set( 'Album' => 'Siamese Dream' => {
+        artist => 'Smashing Pumpkins',
+        released => DateTime->new( year => 1993, month => 1, day => 1, hour => 0, minute => 0, second => 0 ),
+    } );
 
-my $album = $store->get( 'Album' => 'Siamese Dream' );
-my $released = $album->{ released };
+    my $album = $store->get( 'Album' => 'Siamese Dream' );
+    my $released = $album->{ released };
 
-ok( blessed $released );
-is( $released->year, 1993 );
-is( $released->day, 1 );
+    ok( blessed $released );
+    is( $released->year, 1993 );
+    is( $released->day, 1 );
+}
 
 done_testing;
