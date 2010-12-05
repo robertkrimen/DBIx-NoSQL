@@ -1,5 +1,5 @@
 NAME
-    DBIx::NoSQL - Experimental NoSQL-ish overlay for an SQL database
+    DBIx::NoSQL - NoSQL-ish overlay for an SQL database
 
 VERSION
     version 0.0014

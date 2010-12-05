@@ -1,5 +1,5 @@
 package DBIx::NoSQL;
-# ABSTRACT: Experimental NoSQL-ish overlay for an SQL database
+# ABSTRACT: NoSQL-ish overlay for an SQL database
 
 use strict;
 use warnings;
@@ -15,7 +15,6 @@ sub connect {
     my $class = shift;
     return DBIx::NoSQL::Store->connect( @_ );
 }
-
 
 1;
 
@@ -65,11 +64,13 @@ __END__
 
 =head1 DESCRIPTION
 
-DBIx::NoSQL is a layer over DBI that presents a NoSQLish way to store and retrieve data. You do not need to prepare a schema beforehand to start putting data in!
+DBIx::NoSQL is a layer over DBI that presents a NoSQLish way to store and retrieve data. DBIx::NoSQL will detect if the storage table is missing or not and create it autoamtically. You do _not_ need to prepare a schema/table manually
 
-Currently, data setting/getting works by using JSON for serialization and SQLite as the database (though additional database support should not be difficult to implement)
+When writing data to the store, the data (a HASH reference) is first serialized using L<JSON> and then inserted/updated via L<DBIx::Class> to an SQLite backend
 
-The API is fairly sane, though still an early "alpha." At the moment, a better name for this package might be "DBIx::NoSQLite"
+Retrieving data from the store is done by key lookup or by searching an SQL-based index. Once found, the data is deserialized via L<JSON> and returned
+
+The API is fairly sane, though still beta
 
 =head1 USAGE
 
@@ -109,9 +110,9 @@ Return the L<DBI> database handle for the store, if you need/want to do your own
 
 =head1 Search USAGE
 
-To search on a model, you must first set up an index on the field you want to search on
+To search on a model, you must have installed an index on the field you want to search on
 
-Refer to "Model USAGE" for more information
+Refer to "Model USAGE" for indexing information
 
 =head2 $search = $store->search( $model, [ $where ] )
 
