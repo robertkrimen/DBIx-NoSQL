@@ -64,9 +64,9 @@ __END__
 
 =head1 DESCRIPTION
 
-DBIx::NoSQL is a layer over DBI that presents a NoSQLish way to store and retrieve data. DBIx::NoSQL will detect if the storage table is missing or not and create it autoamtically. You do _not_ need to prepare a schema/table manually
+DBIx::NoSQL is a layer over DBI that presents a NoSQLish way to store and retrieve data. It does this by using a table called C<__Store__>. Once connected to a database, it will detect if this table is missing and create it if necessary
 
-When writing data to the store, the data (a HASH reference) is first serialized using L<JSON> and then inserted/updated via L<DBIx::Class> to an SQLite backend
+When writing data to the store, the data (a HASH reference) is first serialized using L<JSON> and then inserted/updated via L<DBIx::Class> to (currently) an SQLite backend
 
 Retrieving data from the store is done by key lookup or by searching an SQL-based index. Once found, the data is deserialized via L<JSON> and returned
 
@@ -76,7 +76,9 @@ The API is fairly sane, though still beta
 
 =head2 $store = DBIx::NoSQL->connect( $path )
 
-Returns a new DBIx::NoSQL store connected to (creating if necessary) the SQLite database located at C<$path>
+Returns a new DBIx::NoSQL store connected to the SQLite database located at C<$path>
+
+If the SQLite database file at C<$path> does not exist, it will be created
 
 =head2 $store->set( $model, $key, $value )
 
@@ -101,6 +103,8 @@ If C<$model> has index, this command will also delete the index entry correspond
 =head2 $store->reindex
 
 Reindex the searchable/orderable data in C<$store>
+
+This method is smart, in that it won't reindex a model unless the schema for $store is different/has changed. That is, if the schema for C<$store> is the same as it is in the database, this call will do nothing
 
 Refer to "Model USAGE" below for more information
 
@@ -150,7 +154,7 @@ Further refine the search in the same way C<< $search->where( ... ) >> does
 
 Further refine C<$search> with the given C<$where>
 
-A new object is cloned from the original (the original which is left untouched)
+A new object is cloned from the original (the original C<$search> is left untouched)
 
 An index is required for the filtering columns
 
@@ -174,20 +178,20 @@ Refer to L<SQL::Abstract> for the format of C<$order_by> (actually uses L<DBIx::
 
 =head2 $model = $store->model( $model_name )
 
-    $store->model( 'Artist' )->index( 'name' ) # 'name' is now searchable/orderable, etc.
-
 Retrieve or create the C<$model_name> model object
 
 =head2 $model->index( $field_name )
 
-    $store->model( 'Artist' )->index( 'website', isa => 'URI' )
-    $store->model( 'Artist' )->index( 'founded', isa => 'DateTime' )
+    $store->model( 'Artist' )->index( 'name' ) # 'name' is now searchable/orderable, etc.
 
 Index C<$field_name> on C<$model>
 
 Every time the store for c<$model> is written to, the index will be updated with the value of C<$field>
 
 =head2 $model->index( $field_name, isa => $type )
+
+    $store->model( 'Artist' )->index( 'website', isa => 'URI' )
+    $store->model( 'Artist' )->index( 'founded', isa => 'DateTime' )
 
 Index C<$field_name> on C<$model> as a special type/object (e.g. L<DateTime> or L<URI>)
 
@@ -204,20 +208,24 @@ Reindex the C<$model> data in the store after making a field indexing change:
 
 If C<$model> does not have an index, this method will simply return
 
-To rebuild the index for _every_ model, you can do:
+To rebuild the index for _every_ model (on startup, for example), you can do:
 
     $store->reindex
 
-=head1 ...
+=head1 In the future
 
-For additional usage, see SYNOPSIS or look at the code
+Create a better interface for stashing and document it
 
-More documentation forthcoming
+Wrap things in transactions that need it
+
+More tests: Always. Be. Testing.
 
 =head1 SEE ALSO
 
 L<KiokuDB>
 
 L<DBIx::Class>
+
+L<DBD::SQLite>
 
 =cut
