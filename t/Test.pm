@@ -7,7 +7,6 @@ use t::Test;
 use File::Temp qw/ tempfile /;
 use DBIx::NoSQL;
 use Path::Class;
-use DateTime;
 use JSON; our $json = JSON->new->pretty;
 use Scalar::Util qw/ blessed /;
 
