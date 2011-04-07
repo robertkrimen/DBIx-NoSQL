@@ -87,8 +87,10 @@ sub prepare {
         $self->deploy;
     }
     elsif ( ! $self->same ) {
-        $self->redeploy;
-        if ( 0 ) {
+        if ( 1 ) {
+            $self->redeploy;
+        }
+        else {
             my $model = $self->model->name;
             die "Unable to prepare index for model ($model) because index already exists (and is different)";
         }
