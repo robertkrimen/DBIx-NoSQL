@@ -104,7 +104,8 @@ sub prepare {
             { me => $search_table },
             [
                 { '-join-type' => 'LEFT', '__Store__' => $entity_table },
-                { "__Store__.__key__" => "me.$search_key_column", '__Store__.__model__' => "'$model_name'" },
+                { "__Store__.__key__" => \"= me.$search_key_column", '__Store__.__model__' => \"= '$model_name'" },
+                #{ "__Store__.__key__" => "me.$search_key_column", '__Store__.__model__' => "'$model_name'" },
             ]
         ],
         $target,
