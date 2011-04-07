@@ -1,3 +1,7 @@
+0.0016 Wednesday April 06 20:20:04 PDT 2011:
+    - Better DSN/file detection for automatic delegation to SQLite 
+    - Automatic redeployment of "different" indexing schema
+
 0.0015 Sunday December 05 16:31:55 PST 2010:
     - Removed superfluous DateTime dependency
 
