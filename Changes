@@ -1,3 +1,6 @@
+0.0017 Thursday April 07 14:19:22 PDT 2011:
+    - Declare the join via DBIC in the correct way
+
 0.0016 Wednesday April 06 20:20:04 PDT 2011:
     - Better DSN/file detection for automatic delegation to SQLite 
     - Automatic redeployment of "different" indexing schema
