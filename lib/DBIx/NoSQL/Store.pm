@@ -214,9 +214,11 @@ sub transact {
         $dbh->commit;
     }
     catch {
+        my $error = $_[0];
         try {
             $dbh->rollback;
         }
+        die $error;
     }
 }
 
