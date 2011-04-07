@@ -173,12 +173,28 @@ sub connect {
     return $self;
 }
 
+sub _is_likely_file_connection {
+    my $self = shift;
+    my $connection = shift;
+
+    if      ( ref $connection eq 'ARRAY' ) { return 0 }
+    elsif   ( ref $connection eq '' && $connection =~ m/^dbi:/i ) { return 0 }
+    elsif   ( blessed $connection && $connection->isa( 'Path::Class::File' ) ) { return 1 }
+    elsif   ( ref $connection eq '' ) { return 1 } 
+
+    warn ref $connection;
+    warn $connection;
+
+    return 0; # Not sure, pass through to DBI I guess
+}
+
 sub _connect {
     my $self = shift;
     my $connection = shift;
 
     my $database_file;
-    if ( blessed $connection && $connection->isa( 'Path::Class::File' ) ) {
+    if ( $self->_is_likely_file_connection( $connection ) ) {
+        $connection = file "$connection";
         $database_file = $connection;
         $database_file->parent->mkpath; # TODO Make this optional?
         $connection = "dbi:SQLite:dbname=$database_file";
