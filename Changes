@@ -1,3 +1,6 @@
+0.0018 Thursday December 22 18:12:34 PST 2011:
+    - Fix failing test with latest DBIx::Class
+
 0.0017 Thursday April 07 14:19:22 PDT 2011:
     - Declare the join via DBIC in the correct way
 
