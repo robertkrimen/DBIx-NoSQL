@@ -128,15 +128,12 @@ sub next {
         $self->sth( $self->_select );
     }
 
-    my $row = $self->sth->fetchrow_arrayref;
-    if ( $row ) {
-    }
-    else {
+    my $row = $self->sth->fetchrow_arrayref or do {
         $self->sth( undef );
         $self->finished( 0 );
-    }
+    };
 
-    return $row;
+    return $row || [];
 }
 
 sub all {
