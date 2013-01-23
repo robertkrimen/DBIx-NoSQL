@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 use Test::Most;
+use Test::Deep qw/blessed/;
 use t::Test;
 use DBIx::NoSQLite;
 
