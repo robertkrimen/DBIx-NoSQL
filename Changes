@@ -1,3 +1,6 @@
+0.0020 Wednesday January 30 16:39:54 PST 2013:
+    - Incorporate yanick's fixes to ->next
+
 0.0019 Wednesday January 23 14:43:28 PST 2013:
     - Import 'blessed' from Test::Deep explicitly
 

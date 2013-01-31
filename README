@@ -2,7 +2,7 @@ NAME
     DBIx::NoSQL - NoSQL-ish overlay for an SQL database
 
 VERSION
-    version 0.0019
+    version 0.0020
 
 SYNOPSIS
         use DBIx::NoSQL;
