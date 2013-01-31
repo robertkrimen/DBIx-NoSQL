@@ -65,7 +65,7 @@ SKIP: {
     my $album = $store->get( 'Album' => 'Siamese Dream' );
     my $released = $album->{ released };
 
-    ok( blessed $released );
+    is ref($released) => 'DateTime';
     is( $released->year, 1993 );
     is( $released->day, 1 );
 }
