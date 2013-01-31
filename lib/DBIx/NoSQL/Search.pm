@@ -143,6 +143,12 @@ sub next {
     my $cursor = $self->cursor;
     my $value = $cursor->next;
 
+    # cursor returns an arrayref, we want its first element
+    $value = $value->[0] if ref $value;
+
+    # nothing found? eject
+    return unless $value;
+
     if      ( $as eq 'object' ) { return $model->create_object( $value ) }
     elsif   ( $as eq 'entity' ) { return $model->create_entity( $value ) }
     elsif   ( $as eq 'data' ||
