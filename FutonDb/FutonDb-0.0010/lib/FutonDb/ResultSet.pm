@@ -1,5 +1,5 @@
 package FutonDb::ResultSet;
 
-use Any::Moose;
+use Moose;
 
 1;

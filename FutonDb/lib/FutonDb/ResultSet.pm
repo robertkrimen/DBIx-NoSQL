@@ -1,6 +1,6 @@
 package FutonDb::ResultSet;
 
-use Any::Moose;
+use Moose;
 
 use SQL::Abstract;
 use Hash::Merge::Simple qw/ merge /;

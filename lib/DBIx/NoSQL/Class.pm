@@ -31,11 +31,11 @@ package DBIx::NoSQL::Class::Meta;
 use strict;
 use warnings;
 
-use Any::Moose;
+use Moose;
 
 has package => qw/ is ro required 1 /;
 
-no Any::Moose;
+no Moose;
 
 sub has {
     my $self = shift;

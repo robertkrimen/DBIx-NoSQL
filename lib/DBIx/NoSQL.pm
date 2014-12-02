@@ -1,4 +1,5 @@
 package DBIx::NoSQL;
+
 # ABSTRACT: NoSQL-ish overlay for an SQL database
 
 use strict;

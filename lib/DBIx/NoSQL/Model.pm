@@ -3,7 +3,7 @@ package DBIx::NoSQL::Model;
 use strict;
 use warnings;
 
-use Any::Moose;
+use Moose;
 use Clone qw/ clone /;
 use Digest::SHA qw/ sha1_hex /;
 
