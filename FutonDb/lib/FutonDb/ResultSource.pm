@@ -1,6 +1,6 @@
 package FutonDb::ResultSource;
 
-use Any::Moose;
+use Moose;
 
 use FutonDb::SubSequence;
 

@@ -3,7 +3,7 @@ package DBIx::NoSQL::TypeMap;
 use strict;
 use warnings;
 
-use Any::Moose;
+use Moose;
 
 has _map => qw/ is ro isa HashRef /, default => sub { {} };
 
@@ -46,7 +46,7 @@ sub create {
 
 package DBIx::NoSQL::TypeMap::Type;
 
-use Any::Moose;
+use Moose;
 
 has name => qw/ is ro required 1 isa Str /;
 

@@ -7,7 +7,7 @@ BEGIN {
 use strict;
 use warnings;
 
-use Any::Moose;
+use Moose;
 
 has dbh => qw/ is ro required 1 /;
 

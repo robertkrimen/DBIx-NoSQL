@@ -3,7 +3,7 @@ package DBIx::NoSQL::Model::Index;
 use strict;
 use warnings;
 
-use Any::Moose;
+use Moose;
 use Clone qw/ clone /;
 use Digest::SHA qw/ sha1_hex /;
 use DBIx::NoSQL::Search;
@@ -138,7 +138,7 @@ sub register_result_class {
     my $table = $result_class->table;
     my $deployment_statements = $schema->build_deployment_statements;
     my @deployment_statements = split m/;\n/, $deployment_statements;
-    my ( $create ) = grep { m/(?:(?i)CREATE\s+TABLE\s+)$table/ } @deployment_statements;
+		my ( $create ) = grep { m/(?:(?i)CREATE\s+TABLE\s+.*)$table/ } @deployment_statements;
     my ( $drop ) = grep { m/(?:(?i)DROP\s+TABLE\s+.*)$table/ } @deployment_statements;
 
     s/^\s*//, s/\s*$// for $create, $drop;

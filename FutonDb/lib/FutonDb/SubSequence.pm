@@ -3,7 +3,7 @@ package FutonDb::SubSequence;
 use strict;
 use warnings;
 
-use Any::Moose;
+use Moose;
 
 has [qw/ beforelist afterlist aroundlist prelist postlist /] =>
     qw/ is ro lazy 1 isa ArrayRef[CodeRef] /, default => sub { [] };
@@ -70,6 +70,6 @@ sub pre {
 
 package FutonDb::SubSequence::Stack;
 
-use Any::Moose;
+use Moose;
 
 1;

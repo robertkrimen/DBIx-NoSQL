@@ -1,5 +1,5 @@
 package DBIx::NoSQL::Entity;
 
-use Any::Moose;
+use Moose;
 
 1;

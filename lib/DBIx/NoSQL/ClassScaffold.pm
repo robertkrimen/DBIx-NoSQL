@@ -9,7 +9,7 @@ our $serial = sub {
     return $__serial__ += 1;
 };
 
-use Any::Moose;
+use Moose;
 
 has package => qw/ is ro lazy_build 1 /;
 sub _build_package {
@@ -19,7 +19,7 @@ sub _build_package {
 has package_meta => qw/ is ro lazy_build 1 /;
 sub _build_package_meta {
     my $self = shift;
-    return any_moose( 'Meta::Class' )->create( $self->package );
+		return Moose::Meta::Class->create($self->package);
 }
 
 sub push_ISA {
@@ -72,7 +72,7 @@ sub become_ResultClass_Store {
 
 package DBIx::NoSQL::ClassScaffold::Schema;
 
-use Any::Moose;
+use Moose;
 
 extends qw/ DBIx::Class::Schema /;
 

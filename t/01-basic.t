@@ -24,6 +24,9 @@ $store->model( 'Artist' )->set( 1 => { Xyzzy => 1 } );
 $store->model( 'Artist' )->set( 2 => { Xyzzy => 2 } );
 $store->model( 'Artist' )->set( 3 => { Xyzzy => 3 } );
 
+my $randid = $store->model( 'Artist' )->set( { moo => 'cow' });
+is(length($randid),48, 'Randomish id set');
+
 ok( $store->exists( 'Artist' => 1 ) );
 ok( $store->exists( 'Artist' => 2 ) );
 ok( $store->exists( 'Artist' => 3 ) );
@@ -31,7 +34,7 @@ ok( ! $store->exists( 'Artist' => 4 ) );
 ok( ! $store->exists( 'Artist' => 42 ) );
 
 is( $store->search( 'Artist', { key => 1 } )->count, 1 );
-is( $store->search( 'Artist' )->count, 3 );
+is( $store->search( 'Artist' )->count, 4 );
 is( $store->search( 'Artist', { key => { -in => [qw/ 1 3 /] } } )->count, 2 );
 cmp_deeply( [ $store->search( 'Artist', { key => 1 } )->fetch ], [
     { Xyzzy => 1 },

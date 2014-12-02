@@ -3,7 +3,7 @@ package DBIx::NoSQL::Model;
 use strict;
 use warnings;
 
-use Any::Moose;
+use Moose;
 use Clone qw/ clone /;
 use Digest::SHA qw/ sha1_hex /;
 
@@ -95,6 +95,11 @@ sub set {
 
     my ( $entity, $data, $value );
 
+    if (ref($key) and !$target) {
+      $target = $key;
+      $key = substr(sprintf("%x",time).sha1_hex(int(rand(time))),0,48);
+    }
+
     if ( blessed $target ) {
         $entity = $self->unwrap( $target );
         $target = $entity;
@@ -115,6 +120,7 @@ sub set {
     if ( $self->searchable ) {
         $self->index->update( $key => $data );
     }
+    return $key;
 }
 
 sub exists {

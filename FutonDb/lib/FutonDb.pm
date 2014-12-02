@@ -4,7 +4,7 @@ package FutonDb;
 use strict;
 use warnings;
 
-use Any::Moose;
+use Moose;
 use Try::Tiny;
 
 use JSON;
