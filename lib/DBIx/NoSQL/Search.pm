@@ -3,7 +3,7 @@ package DBIx::NoSQL::Search;
 use strict;
 use warnings;
 
-use Any::Moose;
+use Moose;
 use Hash::Merge::Simple qw/ merge /;
 
 has model => qw/ is ro required 1 /, handles => [qw/ store storage /];
