@@ -1,31 +1,3 @@
-package DBIx::NoSQL::Class;
-
-use strict;
-use warnings;
-
-sub import {
-    my $self = shift;
-    if ( @_ ) {
-        my $extend = shift;
-        my $package = caller;
-        $self->extend( $extend, $package );
-    }
-}
-
-sub extend {
-    my $self = shift;
-    my $extend = shift;
-    my $package = shift || caller;
-
-    my $meta = DBIx::NoSQL::Class::Meta->new( package => $package );
-
-    $package->meta->add_attribute( _entity => qw/ is ro required 1 / );
-
-    return unless $extend;
-
-    $extend->( $meta );
-}
-
 package DBIx::NoSQL::Class::Meta;
 
 use strict;
