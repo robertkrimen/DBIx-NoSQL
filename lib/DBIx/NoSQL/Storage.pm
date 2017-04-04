@@ -1,6 +1,6 @@
 package DBIx::NoSQL::Storage;
 
-use Any::Moose;
+use Moose;
 use Carp;
 
 has store => qw/ is ro required 1 weak_ref 1 /;
@@ -102,7 +102,7 @@ _END_
 
 package DBIx::NoSQL::Storage::Cursor;
 
-use Any::Moose;
+use Moose;
 use Try::Tiny;
 
 has storage => qw/ is ro required 1 /;

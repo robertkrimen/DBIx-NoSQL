@@ -3,7 +3,7 @@ package DBIx::NoSQL::Model::Field;
 use strict;
 use warnings;
 
-use Any::Moose;
+use Moose;
 
 has name => qw/ is ro required 1 /;
 

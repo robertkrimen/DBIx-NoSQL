@@ -3,7 +3,7 @@ package DBIx::NoSQL::Stash;
 use strict;
 use warnings;
 
-use Any::Moose;
+use Moose;
 use Carp qw/ cluck /;
 
 has store => qw/ is ro required 1 weak_ref 1 /;
